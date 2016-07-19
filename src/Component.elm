@@ -1,0 +1,87 @@
+module Component exposing (..)
+
+import Html exposing (..)
+import Html.App as App
+import Html.Attributes exposing (..)
+
+
+-- COMPONENT MODEL 
+
+
+type alias Context msg cMsg =
+  { mapMsg : cMsg -> msg
+  }
+
+
+type alias Component model msg cMsg =
+  { model : model
+  , update : Context msg cMsg -> cMsg -> model -> (model, Cmd msg)
+  , view : Context msg cMsg -> model -> Page msg
+  }
+
+-- extract to more complex record
+--  , initCmd : Cmd cMsg
+--  , subscriptions : model -> Sub cMsg
+
+
+type alias ComponentUpdate model msg cMsg = 
+  Context msg cMsg -> cMsg -> model -> (model, Cmd msg)
+
+
+type alias ComponentView model msg cMsg =
+  Context msg cMsg -> model -> Page msg
+
+
+type alias Page msg =
+  { title : String
+  , content : Html msg
+  }
+
+
+mapContext : Context msg cMsg -> (ccMsg -> cMsg) -> Context msg ccMsg
+mapContext ctx map =
+  { ctx | mapMsg = map >> ctx.mapMsg }
+
+
+generateView : Context msg cMsg -> (Component model msg cMsg) -> Page msg
+generateView ctx cp =
+  cp.view ctx cp.model
+
+
+--updateModel : Context msg cMsg -> (model -> Component cModel cMsg msg) -> (Component cModel cMsg msg -> model -> model) -> model -> cMsg -> (model, Cmd msg)
+updateModel ctx getter setter model msg =
+  let
+    cp = getter model
+    (updatedModel, cmd) = cp.update ctx msg cp.model
+  in
+    (setter { cp | model = updatedModel } model, cmd)
+
+
+--setPlaceInnerComponent : (Model -> Component cModel cMsg) -> (Component cModel cMsg -> Model -> Model) -> Model -> MenuEntry -> page -> (Model, Cmd Msg)
+setPlaceInnerComponent getter setter model place page =
+  let
+    cp = getter model 
+    m = cp.model
+  in
+    (setter { cp | model = { m | place = page } }
+      { model | place = place }) ! []
+
+
+row : List (Html msg) -> Html msg
+row internal =
+  div [ class "row" ] internal
+
+
+fullRow : List (Html msg) -> Html msg
+fullRow internal =
+  row [ div [ class "col-md-12" ] internal ]
+
+
+singleCellRow : Int -> List (Html msg) -> Html msg
+singleCellRow width internal =
+  row [ div [ class <| "col-md-" ++ (toString width) ] internal ]
+
+
+headerRow : String -> Html msg
+headerRow header =
+  div [ class "row header" ] [ h2 [] [ text header ] ]
