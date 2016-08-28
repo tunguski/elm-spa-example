@@ -33,9 +33,13 @@ createGuestSession baseUrl msg =
     |> Cmd.map msg 
 
 
-dateParser : String -> Maybe Date
+dateParser : Maybe String -> Maybe Date
 dateParser input =
-  input |> fromString >> toMaybe
+  case input of
+    Just str ->
+      str |> fromString >> toMaybe
+    Nothing -> 
+      Nothing
 
 
 
@@ -44,6 +48,6 @@ sessionDecoder =
   Json.object5 Session
     ("username" := string)
     ("token" := string)
-    (map dateParser <| "loginTime" := string)
-    (map dateParser <| "lastRequestTime" := string)
+    (map dateParser <| maybe <| "loginTime" := string)
+    (map dateParser <| maybe <| "lastRequestTime" := string)
     ("idUser" := string)

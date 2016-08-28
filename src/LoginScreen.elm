@@ -57,8 +57,7 @@ update ctx action model =
       { model | passwordAgain = password } ! []
 
     PlayAsGuest ->
-      (Debug.log "Play as Guest" model) 
-      ! [ createGuestSession baseUrl <| GetSession >> ctx.mapMsg ]
+      model ! [ createGuestSession baseUrl <| GetSession >> ctx.mapMsg ]
 
     GetSession result ->
       Debug.crash "Can never be here" <| model ! []

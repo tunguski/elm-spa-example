@@ -17,9 +17,11 @@ update action model =
     None -> model ! []
 
     GetSession result ->
-      case result of
+      case (Debug.log "getSession" result) of
         Ok session ->
-          { model | session = Just session } ! []
+          { model | session = Just session } ! 
+            [ Navigation.modifyUrl "#/Dashboard"
+            ]
         Err error ->
           { model | session = Nothing } ! []
 
