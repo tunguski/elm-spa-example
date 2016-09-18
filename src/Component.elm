@@ -17,11 +17,13 @@ type alias Component model msg cMsg =
   { model : model
   , update : Context msg cMsg -> cMsg -> model -> (model, Cmd msg)
   , view : Context msg cMsg -> model -> Page msg
+  , initCmd : Maybe (Context msg cMsg -> Cmd msg)
+  , subs : Maybe (Context msg cMsg -> model -> Sub msg)
   }
 
--- extract to more complex record
---  , initCmd : Cmd cMsg
---  , subscriptions : model -> Sub cMsg
+
+simpleCp model update view =
+  Component model update view Nothing Nothing
 
 
 type alias ComponentUpdate model msg cMsg = 
@@ -48,15 +50,19 @@ generateView ctx cp =
   cp.view ctx cp.model
 
 
+{-
+-}
 --updateModel : Context msg cMsg -> (model -> Component cModel cMsg msg) -> (Component cModel cMsg msg -> model -> model) -> model -> cMsg -> (model, Cmd msg)
 updateModel ctx getter setter model msg =
   let
-    cp = getter model
+    cp = Debug.log "updateModel" <| getter model
     (updatedModel, cmd) = cp.update ctx msg cp.model
   in
     (setter { cp | model = updatedModel } model, cmd)
 
 
+{-
+-}
 --setPlaceInnerComponent : (Model -> Component cModel cMsg) -> (Component cModel cMsg -> Model -> Model) -> Model -> MenuEntry -> page -> (Model, Cmd Msg)
 setPlaceInnerComponent getter setter model place page =
   let
@@ -65,6 +71,21 @@ setPlaceInnerComponent getter setter model place page =
   in
     (setter { cp | model = { m | place = page } }
       { model | place = place }) ! []
+
+
+--setPlace : (Model -> Component cModel cMsg) -> Model -> MenuEntry -> (Model, Cmd Msg)
+setPlace ctx getter model place =
+  let
+    cp = getter model
+  in
+    { model | place = place } !
+      (case cp.initCmd of
+        Just c ->
+          [ c ctx ]
+        Nothing ->
+          []
+      )
+
 
 
 row : List (Html msg) -> Html msg

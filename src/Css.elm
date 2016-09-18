@@ -203,6 +203,13 @@ h1, .h1, h2, .h2, h3, .h3 {
   position: relative;
 }
 
+.form-inline > * {
+  margin-right: 5px;
+}
+.form-inline label {
+  padding-right: 5px;
+}
+
 .sidebar-nav .menu-collapse {
   position: absolute;
   left: 0;

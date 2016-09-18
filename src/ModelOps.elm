@@ -51,11 +51,6 @@ toUrl model =
     "#/" ++ (dropLeft 3 <| toString model.place)
 
 
-setPlace : MenuEntry -> Model -> Model
-setPlace place model =
-  { model | place = place }
-
-
 {-| The URL is turned into a result. If the URL is valid, we just update our
 model to the new count. If it is not a valid URL, we modify the URL to make
 sense.
@@ -78,7 +73,7 @@ urlUpdate result model =
             setReportComponent model place page
           
         ME_Dashboard ->
-          (setPlace place model) ! []
+          setPlace (Context Dashboard) .dashboardComponent model place
 
     Err errorMsg ->
       let

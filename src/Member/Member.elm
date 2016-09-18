@@ -12,7 +12,7 @@ import Member.Search exposing (..)
 
 
 component : Component (Model msg) msg Msg
-component = Component model update view
+component = Component.simpleCp model update view
 
 
 -- MODEL
