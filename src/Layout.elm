@@ -11,6 +11,7 @@ import Window exposing (..)
 
 import Css exposing (..)
 import Component exposing (..)
+import Msg exposing (..)
 import Model exposing (..)
 
 

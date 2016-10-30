@@ -18,6 +18,7 @@ import Dashboard
 import LoginScreen
 import ClientSession exposing (..) 
 import Menu exposing (..)
+import Msg exposing (..)
 
 
 emptyModel : Model
@@ -28,7 +29,7 @@ emptyModel =
   , menu = menuDefinition
   , config = (CssConfig (Size 0 0) False)
   , dashboardComponent = Dashboard.component
-  , loginComponent = LoginScreen.component
+  , loginComponent = LoginScreen.component PlayAsGuest
   , taskComponent = Task.component
   , memberComponent = Member.component
   , reportComponent = Report.component

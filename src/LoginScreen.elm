@@ -14,8 +14,9 @@ import Component exposing (..)
 import ClientSession exposing (..)
 
 
-component : Component Model msg Msg
-component = Component.simpleCp model update view
+component : msg -> Component Model msg Msg
+component msg = 
+  Component.simpleCp model update (view msg)
 
 
 -- MODEL
@@ -40,8 +41,6 @@ type Msg
     = Name String
     | Password String
     | PasswordAgain String
-    | PlayAsGuest
-    | GetSession (Result Http.Error Session)
 
 
 update : ComponentUpdate Model msg Msg 
@@ -56,18 +55,13 @@ update ctx action model =
     PasswordAgain password ->
       { model | passwordAgain = password } ! []
 
-    PlayAsGuest ->
-      model ! [ createGuestSession baseUrl <| GetSession >> ctx.mapMsg ]
-
-    GetSession result ->
-      Debug.crash "Can never be here" <| model ! []
 
 
 -- VIEW
 
 
-view : ComponentView Model msg Msg 
-view ctx model =
+view : msg -> ComponentView Model msg Msg 
+view playAsGuest ctx model =
   Page "Login" <|
     Html.form [ class "form" ] [
     div [ class "col-md-offset-4 col-md-4" ]
@@ -96,7 +90,7 @@ view ctx model =
               [ type' "text" 
               , class "form-control" 
               , placeholder "Password"
-              , onInput <| Name >> ctx.mapMsg
+              , onInput <| Password >> ctx.mapMsg
               ] []
             ]
           ]
@@ -110,7 +104,7 @@ view ctx model =
             , button
               [ type' "button"
               , class "btn btn-default"
-              , onClick <| ctx.mapMsg PlayAsGuest 
+              , onClick playAsGuest 
               ] [ text "Play as Guest" ]
             ]
           ]

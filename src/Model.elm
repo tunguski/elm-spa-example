@@ -13,6 +13,7 @@ import Report.Report as Report
 import Dashboard
 import ClientSession exposing (Session)
 import LoginScreen
+import Msg exposing (..)
 
 
 -- MODEL
@@ -76,29 +77,5 @@ type alias Menu =
   , expanded : Bool
   , def : List MenuGroup 
   }
-
-
-type Msg
-  = None
-  | GetSession (Result Http.Error Session)
-  | InitialWindowSize
-  | ToggleHamburgerMenu 
-
-  | Resize Size 
-  | ToggleSideMenu Bool 
-  | ChangeView MenuEntry
-
-  | Login LoginScreen.Msg
-  | Dashboard Dashboard.Msg 
-  | Task Task.Msg
-  | Member Member.Msg
-  | Report Report.Msg
-
-
-type MenuEntry
-  = ME_Dashboard 
-  | ME_Task Task.Pages
-  | ME_Member Member.Pages
-  | ME_Report Report.Pages
 
 

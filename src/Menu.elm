@@ -1,6 +1,7 @@
 module Menu exposing (..)
 
 
+import Msg exposing (..) 
 import Model exposing (..) 
 import Task.Task as Task
 import Member.Member as Member

@@ -52,6 +52,15 @@ getTables baseUrl msg =
     |> Cmd.map msg 
 
 
+createTable : String -> String -> (Result Http.Error String -> msg) -> Cmd msg
+createTable baseUrl tableName msg =
+  Http.post Json.string
+  (baseUrl ++ "tables")
+  (Http.string tableName)
+    |> Task.perform Err Ok
+    |> Cmd.map msg 
+
+
 init ctx =
   getTables baseUrl DoInit
     |> Cmd.map ctx.mapMsg
@@ -62,7 +71,8 @@ init ctx =
 
 type Msg
     = TableName String
-    | OpenNewTable
+    | CreateNewTable
+    | OpenTable String
     | DoInit (Result Http.Error String)
 
 
@@ -71,9 +81,14 @@ update ctx action model =
   case action of
     TableName name ->
       { model | newTableName = name } ! []
-    OpenNewTable ->
+    CreateNewTable ->
       model 
-        ! [ Navigation.newUrl ("#/Table/" ++ model.newTableName) ]
+        ! [ createTable baseUrl model.newTableName 
+              (\r -> ctx.mapMsg <| OpenTable model.newTableName) 
+          ]
+    OpenTable name ->
+      model 
+        ! [ Navigation.newUrl ("#/Table/" ++ name) ]
     DoInit string ->
       model ! []
 
@@ -97,7 +112,7 @@ view ctx model =
               ]
           , button 
               [ class "btn btn-primary"
-              , onClick <| ctx.mapMsg OpenNewTable 
+              , onClick <| ctx.mapMsg CreateNewTable 
               , type' "button"
               ] 
               [ text "Create New Table" ]

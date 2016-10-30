@@ -6,6 +6,7 @@ import UrlParser exposing (..)
 import Window exposing (..)
 
 import Layout exposing (view)
+import Msg exposing (..)
 import Model exposing (..)
 import ModelOps exposing (initModel, urlUpdate)
 import Update exposing (update)

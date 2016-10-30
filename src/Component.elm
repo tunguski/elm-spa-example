@@ -8,11 +8,13 @@ import Html.Attributes exposing (..)
 -- COMPONENT MODEL 
 
 
+-- cMsg - component's Msg
 type alias Context msg cMsg =
   { mapMsg : cMsg -> msg
   }
 
 
+-- cMsg - component's Msg
 type alias Component model msg cMsg =
   { model : model
   , update : Context msg cMsg -> cMsg -> model -> (model, Cmd msg)

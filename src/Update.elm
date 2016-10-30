@@ -5,8 +5,11 @@ import Navigation
 import Task 
 
 
+import Msg exposing (..)
 import Model exposing (..)
 import ModelOps exposing (..)
+import ClientSession exposing (..)
+import Config exposing (..)
 import Component exposing (Component, Context)
 import LoginScreen
 
@@ -32,6 +35,9 @@ update action model =
         menu = model.menu
       in
         { model | menu = { menu | expanded = not menu.expanded } } ! []
+
+    PlayAsGuest ->
+      model ! [ createGuestSession baseUrl GetSession ]
 
     Resize size ->
       let
@@ -60,12 +66,8 @@ update action model =
         setDashboardComponent model msg
 
     Login msg ->
-      case msg of
-        LoginScreen.GetSession result ->
-          model ! [ Task.perform (Err >> GetSession) (GetSession) <| Task.succeed result ]
-        _ ->
-          Component.updateModel (Context Login) .loginComponent
-            setLoginComponent model msg
+      Component.updateModel (Context Login) .loginComponent
+        setLoginComponent model msg
 
     Task msg ->
       Component.updateModel (Context Task) .taskComponent
