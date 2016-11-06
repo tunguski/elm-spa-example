@@ -112,6 +112,8 @@ generatePageContent model =
       case model.place of
         ME_Dashboard -> 
           generateView (Context Dashboard) model.dashboardComponent
+        ME_Table name -> 
+          generateView (Context Table) model.tableComponent
         ME_Task page ->
           generateView (Context Task) model.taskComponent
         ME_Member page ->

@@ -1,7 +1,7 @@
 module ModelOps exposing (..)
 
 
-import Debug
+import Navigation
 import Task exposing (perform)
 import Window exposing (Size)
 import Regex exposing (..)
@@ -15,6 +15,7 @@ import Task.Task as Task
 import Member.Member as Member
 import Report.Report as Report
 import Dashboard
+import TableView
 import LoginScreen
 import SessionModel exposing (..) 
 import ClientSession exposing (..) 
@@ -30,6 +31,7 @@ emptyModel =
   , menu = menuDefinition
   , config = (CssConfig (Size 0 0) False)
   , dashboardComponent = Dashboard.component
+  , tableComponent = TableView.component
   , loginComponent = LoginScreen.component PlayAsGuest
   , taskComponent = Task.component
   , memberComponent = Member.component
@@ -43,14 +45,24 @@ initModel url =
     exec = perform (\_ -> (Resize (Size 0 0))) (Resize) Window.size 
     (model, cmd) = urlUpdate url emptyModel
     session = getSession baseUrl GetSession
+    place =
+      case url of
+        Ok entry ->
+          entry
+        _ ->
+          ME_Dashboard
   in
-    (model, Cmd.batch [ exec, session, cmd ]) 
+    ({ model | place = place }, Cmd.batch [ exec, session, cmd ])
 
 
 toUrl : Model -> String
 toUrl model =
-  replace All (regex " +") (\m -> "/") <|
-    "#/" ++ (dropLeft 3 <| toString model.place)
+  let
+    newUrl =
+      (replace All (regex " +") (\m -> "/") <|
+        "#/" ++ (dropLeft 3 <| toString model.place))
+  in
+    Debug.log "toUrl" newUrl
 
 
 {-| The URL is turned into a result. If the URL is valid, we just update our
@@ -59,7 +71,7 @@ sense.
 -}
 urlUpdate : Result String MenuEntry -> Model -> (Model, Cmd Msg)
 urlUpdate result model =
-  case result of
+  case Debug.log "urlUpdate" result of
     Ok place ->
       case place of
         ME_Task page ->
@@ -76,9 +88,12 @@ urlUpdate result model =
           
         ME_Dashboard ->
           setPlace (Context Dashboard) .dashboardComponent model place
+          
+        ME_Table name ->
+          setPlace (Context Table) .tableComponent model place
 
     Err errorMsg ->
       let
         error = Debug.log "Error message" errorMsg
       in
-        ({ model | place = ME_Dashboard }, Cmd.none)
+        ({ model | place = ME_Dashboard }, Navigation.modifyUrl "#/Dashboard")

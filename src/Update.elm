@@ -23,9 +23,7 @@ update action model =
     GetSession result ->
       case (Debug.log "getSession" result) of
         Ok session ->
-          { model | session = Just session } ! 
-            [ Navigation.modifyUrl "#/Dashboard"
-            ]
+          { model | session = Just session } ! []
         Err error ->
           { model | session = Nothing } ! []
 
@@ -65,6 +63,10 @@ update action model =
     Dashboard msg ->
       Component.updateModel (Context Dashboard) .dashboardComponent
         setDashboardComponent model msg
+
+    Table msg ->
+      Component.updateModel (Context Table) .tableComponent
+        setTableComponent model msg
 
     Login msg ->
       Component.updateModel (Context Login) .loginComponent

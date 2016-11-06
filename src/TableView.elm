@@ -1,4 +1,4 @@
-module Dashboard exposing (..)
+module TableView exposing (..)
 
 import Html exposing (..)
 import Html.App as Html
@@ -99,70 +99,8 @@ update ctx action model =
 
 view : ComponentView Model msg Msg 
 view ctx model =
-  Page "Dashboard" <|
+  Page "Table" <|
     fullRow
-      [ Html.form [ class "form-inline" ]
-          [ div [ class "form-group" ]
-              [ label [] [ text "Table Name" ]
-              , input
-                  [ class "form-control" 
-                  , placeholder "Unique name"
-                  , onInput <| TableName >> ctx.mapMsg
-                  ]
-                  []
-              ]
-          , button 
-              [ class "btn btn-primary"
-              , onClick <| ctx.mapMsg CreateNewTable 
-              , type' "button"
-              ] 
-              [ text "Create New Table" ]
-          ]
-      , h3 [] [ text "Open Tables" ]
-      , table [ class "table table-striped x" ]
-        [ thead []
-            [ tr []
-              [ th [] [ text "Name" ]
-              , th [] []
-              , th [] [ text "Player" ]
-              ]
-            ]
-        , tbody [] 
-            (case model.openTables of
-              Just tables ->
-                tables |> List.map (\table ->
-                  tr []
-                    [ td [] [ a [ href ("#/Table/" ++ table.name) ] [ text table.name ] ]
-                    , td [] [ text ( toString (List.length table.players) ++ "/4" ) ]
-                    , td [] (List.map text table.players)
-                    ]
-                )
-              Nothing ->
-                []
-            )
-        ] 
-      , h3 [] [ text "Players" ]
-      , table [ class "table table-striped x" ]
-        [ thead []
-            [ tr []
-              [ th [] [ text "Name" ]
-              , th [] [ text "Ranking" ]
-              , th [] [ text "Stats" ]
-              ]
-            ]
-        , tbody []
-            [ tr []
-              [ td [] [ text "Name" ]
-              , td [] [ text "Player" ]
-              , td [] [ text "Stats" ]
-              ]
-            , tr []
-              [ td [] [ text "Name" ]
-              , td [] [ text "Player" ]
-              , td [] [ text "Stats" ]
-              ]
-            ]
-        ] 
+      [ h1 [] [ text "Table!" ]
       ]
-
 
