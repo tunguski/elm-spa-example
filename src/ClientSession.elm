@@ -6,15 +6,7 @@ import Json.Decode as Json exposing (..)
 import Result exposing (toMaybe)
 import Http
 import Task
-
-
-type alias Session =
-  { username : String
-  , token : String
-  , loginTime : Maybe Date
-  , lastRequestTime : Maybe Date
-  , idUser : String
-  }
+import SessionModel exposing (..) 
 
 
 getSession : String -> (Result Http.Error Session -> msg) -> Cmd msg
@@ -40,14 +32,3 @@ dateParser input =
       str |> fromString >> toMaybe
     Nothing -> 
       Nothing
-
-
-
-sessionDecoder : Decoder Session
-sessionDecoder =
-  Json.object5 Session
-    ("username" := string)
-    ("token" := string)
-    (map dateParser <| maybe <| "loginTime" := string)
-    (map dateParser <| maybe <| "lastRequestTime" := string)
-    ("idUser" := string)

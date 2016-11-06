@@ -16,6 +16,7 @@ import Member.Member as Member
 import Report.Report as Report
 import Dashboard
 import LoginScreen
+import SessionModel exposing (..) 
 import ClientSession exposing (..) 
 import Menu exposing (..)
 import Msg exposing (..)

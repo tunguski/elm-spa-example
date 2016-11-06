@@ -11,7 +11,7 @@ import Http
 
 import Config exposing (..)
 import Component exposing (..)
-import ClientSession exposing (..)
+import SessionModel exposing (..)
 
 
 component : msg -> Component Model msg Msg

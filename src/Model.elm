@@ -11,7 +11,7 @@ import Task.Task as Task
 import Member.Member as Member
 import Report.Report as Report
 import Dashboard
-import ClientSession exposing (Session)
+import SessionModel exposing (Session)
 import LoginScreen
 import Msg exposing (..)
 

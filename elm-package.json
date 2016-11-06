@@ -4,7 +4,8 @@
     "repository": "https://github.com/tunguski/elm-spa-example.git",
     "license": "MIT",
     "source-directories": [
-        "src/"
+        "src",
+        "../elm-server/common"
     ],
     "exposed-modules": [],
     "native-modules": true,

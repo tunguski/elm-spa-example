@@ -8,6 +8,7 @@ import Task
 import Msg exposing (..)
 import Model exposing (..)
 import ModelOps exposing (..)
+import SessionModel exposing (..)
 import ClientSession exposing (..)
 import Config exposing (..)
 import Component exposing (Component, Context)
