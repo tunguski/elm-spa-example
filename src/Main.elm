@@ -5,7 +5,7 @@ import String exposing (dropLeft)
 import UrlParser exposing (..) 
 import Window exposing (..)
 
-import Layout exposing (view)
+import Layout exposing (view, componentSubsMap)
 import Msg exposing (..)
 import Model exposing (..)
 import ModelOps exposing (initModel, urlUpdate)
@@ -68,7 +68,8 @@ urlParser =
 subscriptions : Model -> Sub Msg
 subscriptions model =
   Sub.batch
-  [ resizes Resize
-  ]
+    [ resizes Resize 
+    , componentSubsMap model
+    ]
 
 

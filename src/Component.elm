@@ -47,9 +47,18 @@ mapContext ctx map =
   { ctx | mapMsg = map >> ctx.mapMsg }
 
 
-generateView : Context msg cMsg -> (Component model msg cMsg) -> Page msg
+generateView : Context msg cMsg -> Component model msg cMsg -> Page msg
 generateView ctx cp =
   cp.view ctx cp.model
+
+
+componentSubs : Context msg cMsg -> Component model msg cMsg -> Sub msg
+componentSubs ctx component =
+  case component.subs of
+    Just fn ->
+      fn ctx component.model
+    _ ->
+      Sub.none
 
 
 {-

@@ -124,6 +124,25 @@ generatePageContent model =
       generateView (Context Login) model.loginComponent
 
 
+componentSubsMap : Model -> Sub Msg
+componentSubsMap model =
+  case model.session of
+    Just session ->
+      case model.place of
+        ME_Dashboard -> 
+          componentSubs (Context Dashboard) model.dashboardComponent
+        ME_Table name -> 
+          componentSubs (Context Table) model.tableComponent
+        ME_Task page ->
+          componentSubs (Context Task) model.taskComponent
+        ME_Member page ->
+          componentSubs (Context Member) model.memberComponent
+        ME_Report page ->
+          componentSubs (Context Report) model.reportComponent
+    Nothing ->
+      componentSubs (Context Login) model.loginComponent
+
+
 view : Model -> Html Msg
 view model =
   let

@@ -9,7 +9,7 @@ import Json.Decode as Json exposing (..)
 import Result exposing (toMaybe)
 import Http
 import Task
-import Time exposing (now, Time)
+import Time exposing (..)
 
 
 import Config exposing (..)
@@ -19,7 +19,7 @@ import TableModel exposing (..)
 
 
 component : Component Model msg Msg
-component = Component model update view (Just init) Nothing
+component = Component model update view (Just init) (Just subs) 
 
 
 -- MODEL
@@ -74,6 +74,12 @@ init ctx =
   |> Cmd.map ctx.mapMsg
 
 
+subs : Context msg Msg -> model -> Sub msg
+subs ctx model =
+  every second CheckUpdate 
+    |> Sub.map ctx.mapMsg
+
+
 -- UPDATE
 
 
@@ -81,7 +87,8 @@ type Msg
     = TableName String
     | CreateNewTable
     | OpenTable String
-    | UpdateTables (Result Http.Error (Time ,List Table))
+    | UpdateTables (Result Http.Error (Time, List Table))
+    | CheckUpdate Time
 
 
 update : ComponentUpdate Model msg Msg 
@@ -100,12 +107,23 @@ update ctx action model =
     UpdateTables result ->
       case result of
         Ok (time, tables) ->
-          { model 
+          { model
             | openTables = Just tables
             , lastFinishedTableUpdate = Just time
           } ! []
         _ ->
-          { model | openTables = Nothing } ! []
+          model ! []
+    CheckUpdate time ->
+      case model.lastFinishedTableUpdate of
+        Just last ->
+          if last + (3 * second) < time then
+            { model
+              | lastFinishedTableUpdate = Nothing
+            } ! [ init ctx ]
+          else
+            model ! []
+        _ ->
+          model ! []
 
 
 -- VIEW
