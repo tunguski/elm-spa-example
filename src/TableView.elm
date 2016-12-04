@@ -18,48 +18,32 @@ import TableModel exposing (..)
 
 
 component : Component Model msg Msg
-component = Component model update view (Just init) Nothing
+component = Component model update view (Nothing) Nothing
 
 
 -- MODEL
 
 
-type alias Player =
-  { name : String
-  }
-
-
 type alias Model =
-  { newTableName : String
-  , openTables : Maybe (List Table)
-  , players : Maybe (List Player)
+  { table : Maybe Table
   }
 
 
 model : Model
 model =
-  Model "" Nothing Nothing
+  Model Nothing
 
 
-getTables : String -> (Result Http.Error (List Table) -> msg) -> Cmd msg
-getTables baseUrl msg =
-  Http.get (listDecoder tableDecoder)
+getTable : String -> (Result Http.Error Table -> msg) -> Cmd msg
+getTable baseUrl msg =
+  Http.get tableDecoder
   (baseUrl ++ "tables")
     |> Task.perform Err Ok
-    |> Cmd.map msg 
-
-
-createTable : String -> String -> (Result Http.Error String -> msg) -> Cmd msg
-createTable baseUrl tableName msg =
-  Http.post Json.string
-  (baseUrl ++ "tables")
-  (Http.string tableName)
-    |> Task.perform Err Ok
-    |> Cmd.map msg 
+    |> Cmd.map msg
 
 
 init ctx =
-  getTables baseUrl DoInit
+  getTable baseUrl (\s -> LoadChanges)
     |> Cmd.map ctx.mapMsg
 
 
@@ -67,40 +51,31 @@ init ctx =
 
 
 type Msg
-    = TableName String
-    | CreateNewTable
-    | OpenTable String
-    | DoInit (Result Http.Error (List Table))
+  = LoadChanges
 
 
-update : ComponentUpdate Model msg Msg 
+update : ComponentUpdate Model msg Msg
 update ctx action model =
   case action of
-    TableName name ->
-      { model | newTableName = name } ! []
-    CreateNewTable ->
-      model 
-        ! [ createTable baseUrl model.newTableName 
-              (\r -> ctx.mapMsg <| OpenTable model.newTableName) 
-          ]
-    OpenTable name ->
-      model 
-        ! [ Navigation.newUrl ("#/Table/" ++ name) ]
-    DoInit result ->
-      case result of
-        Ok tables ->
-          { model | openTables = Just tables } ! []
-        _ ->
-          { model | openTables = Nothing } ! []
+    LoadChanges ->
+      model ![]
 
 
 -- VIEW
 
 
-view : ComponentView Model msg Msg 
+view : ComponentView Model msg Msg
 view ctx model =
   Page "Table" <|
-    fullRow
-      [ h1 [] [ text "Table!" ]
+    multiCellRow
+      [ (2, [ div [ class "table-chat" ]
+          [ div [ class "chat-header" ] [ text "Chat" ]
+          , div [] [ text "fsdds" ]
+          , div [] [ text "asdf" ]
+          ] ])
+      , (8, [ div [ class "table-main" ] [ text "main" ] ])
+      , (2, [ div [ class "table-options" ]
+          [div [ class "table-options-header" ] [ text "Game" ]
+          ] ])
       ]
 

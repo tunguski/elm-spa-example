@@ -105,6 +105,13 @@ singleCellRow width internal =
   row [ div [ class <| "col-md-" ++ (toString width) ] internal ]
 
 
+multiCellRow : List (Int, List (Html msg)) -> Html msg
+multiCellRow cols =
+  row <| List.map (\(width, internal) ->
+      div [ class <| "col-md-" ++ (toString width) ] internal
+    ) cols 
+
+
 headerRow : String -> Html msg
 headerRow header =
   div [ class "row header" ] [ h2 [] [ text header ] ]

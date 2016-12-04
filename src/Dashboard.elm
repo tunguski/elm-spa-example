@@ -9,6 +9,7 @@ import Json.Decode as Json exposing (..)
 import Result exposing (toMaybe)
 import Http
 import Task
+import Time exposing (now, Time)
 
 
 import Config exposing (..)
@@ -33,12 +34,13 @@ type alias Model =
   { newTableName : String
   , openTables : Maybe (List Table)
   , players : Maybe (List Player)
+  , lastFinishedTableUpdate : Maybe Time
   }
 
 
 model : Model
 model =
-  Model "" Nothing Nothing
+  Model "" Nothing Nothing Nothing
 
 
 getTables : String -> (Result Http.Error (List Table) -> msg) -> Cmd msg
@@ -58,9 +60,18 @@ createTable baseUrl tableName msg =
     |> Cmd.map msg 
 
 
+init : Context msg Msg -> Cmd msg
 init ctx =
-  getTables baseUrl DoInit
-    |> Cmd.map ctx.mapMsg
+  Task.map2
+    (,)
+    --(\a b -> ctx.mapMsg (UpdateTables a b))
+    --(UpdateTables >> ctx.mapMsg)
+    now
+    (Http.get (listDecoder tableDecoder)
+      (baseUrl ++ "tables"))
+  |> Task.perform Err Ok
+  |> Cmd.map UpdateTables
+  |> Cmd.map ctx.mapMsg
 
 
 -- UPDATE
@@ -70,7 +81,7 @@ type Msg
     = TableName String
     | CreateNewTable
     | OpenTable String
-    | DoInit (Result Http.Error (List Table))
+    | UpdateTables (Result Http.Error (Time ,List Table))
 
 
 update : ComponentUpdate Model msg Msg 
@@ -86,10 +97,13 @@ update ctx action model =
     OpenTable name ->
       model 
         ! [ Navigation.newUrl ("#/Table/" ++ name) ]
-    DoInit result ->
+    UpdateTables result ->
       case result of
-        Ok tables ->
-          { model | openTables = Just tables } ! []
+        Ok (time, tables) ->
+          { model 
+            | openTables = Just tables
+            , lastFinishedTableUpdate = Just time
+          } ! []
         _ ->
           { model | openTables = Nothing } ! []
 

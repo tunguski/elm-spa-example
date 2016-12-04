@@ -246,4 +246,27 @@ h1, .h1, h2, .h2, h3, .h3 {
   text-align: right;
 }
 
+
+.chat-header ,
+.table-options-header {
+  font-weight: bold;
+  padding: 10px;
+  border-bottom: 1px solid #e7e7e7;
+  margin-bottom: 10px;
+}
+
+.table-chat div {
+  padding-bottom: 10px;
+  padding-left: 10px;
+  padding-right: 10px;
+}
+
+.table-main {
+  padding: 10px;
+  border: 1px solid green;
+  background-color: #ccff99;
+  border-radius: 10px;
+  min-height: 400px;
+}
+
 """ ]
