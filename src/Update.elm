@@ -84,4 +84,7 @@ update action model =
       Component.updateModel (Context Report) .reportComponent
         setReportComponent model msg
 
+    Tests msg ->
+      Component.updateModel (Context Tests) .testsComponent
+        setTestsComponent model msg
 

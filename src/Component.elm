@@ -124,3 +124,5 @@ multiCellRow cols =
 headerRow : String -> Html msg
 headerRow header =
   div [ class "row header" ] [ h2 [] [ text header ] ]
+
+

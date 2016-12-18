@@ -14,6 +14,7 @@ import Dashboard
 import TableView
 import SessionModel exposing (Session)
 import LoginScreen
+import Tests
 
 
 type Msg
@@ -33,6 +34,7 @@ type Msg
   | Member Member.Msg
   | Report Report.Msg
   | Table TableView.Msg
+  | Tests Tests.Msg
 
 
 type MenuEntry
@@ -41,5 +43,6 @@ type MenuEntry
   | ME_Task Task.Pages
   | ME_Member Member.Pages
   | ME_Report Report.Pages
+  | ME_Tests
 
 

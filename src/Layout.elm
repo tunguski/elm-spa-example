@@ -120,6 +120,8 @@ generatePageContent model =
           generateView (Context Member) model.memberComponent
         ME_Report page ->
           generateView (Context Report) model.reportComponent
+        ME_Tests -> 
+          generateView (Context Tests) model.testsComponent
     Nothing ->
       generateView (Context Login) model.loginComponent
 
@@ -139,6 +141,8 @@ componentSubsMap model =
           componentSubs (Context Member) model.memberComponent
         ME_Report page ->
           componentSubs (Context Report) model.reportComponent
+        ME_Tests -> 
+          componentSubs (Context Tests) model.testsComponent
     Nothing ->
       componentSubs (Context Login) model.loginComponent
 

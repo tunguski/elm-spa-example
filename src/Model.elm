@@ -11,6 +11,7 @@ import Task.Task as Task
 import Member.Member as Member
 import Report.Report as Report
 import Dashboard
+import Tests
 import TableView
 import SessionModel exposing (Session)
 import LoginScreen
@@ -32,6 +33,7 @@ type alias Model =
   , taskComponent : Component (Task.Model Msg) Msg Task.Msg
   , memberComponent : Component (Member.Model Msg) Msg Member.Msg
   , reportComponent : Component (Report.Model Msg) Msg Report.Msg
+  , testsComponent : Component Tests.Model Msg Tests.Msg
   }
 
 
@@ -57,6 +59,10 @@ setMemberComponent component model =
 
 setReportComponent component model =
   { model | reportComponent = component }
+
+
+setTestsComponent component model =
+  { model | testsComponent = component }
 
 
 type alias CssConfig =

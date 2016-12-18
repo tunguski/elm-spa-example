@@ -1,4 +1,5 @@
-module TableView exposing (..)
+module Tests exposing (..)
+
 
 import Html exposing (..)
 import Html.App as Html
@@ -8,6 +9,7 @@ import Navigation
 import Json.Decode as Json exposing (..)
 import Result exposing (toMaybe)
 import Http
+import Random
 import Task exposing (Task)
 import Time exposing (Time, every, second, now)
 
@@ -17,77 +19,45 @@ import Component exposing (..)
 import BaseModel exposing (..)
 import TichuModel exposing (..)
 import TichuModelJson exposing (..)
+import TableView exposing (..)
 
 
-component : String -> Component Model msg Msg
-component name = 
-  Component (model name) update view 
-      (Just (init name)) 
+component : Component Model msg Msg
+component = 
+  Component model update view 
+      (Just init) 
       (Just subs) 
-
-
-onError : (x -> Task y a) -> Task x a -> Task y a
-onError fn task =
-    Task.onError task fn
-
-
-ignoreError : Task y a -> Task x a -> Task y a
-ignoreError errorTask task =
-    Task.onError task (\error -> errorTask)
-
-
-andThen : (a -> Task x b) -> Task x a -> Task x b
-andThen fn task =
-    Task.andThen task fn
-
-
-andThenReturn : Task x b -> Task x a -> Task x b
-andThenReturn fn task =
-    Task.andThen task (\result -> fn)
 
 
 -- MODEL
 
 
 type alias Model =
-  { name : String
+  { seed : Int
   , awaitingTable : Maybe AwaitingTable
   , game : Maybe Game
   , lastFinishedTableUpdate : Maybe Time
+  , deserializedGame : Result String Game
+  , deserializedAwaitingTable : Result String AwaitingTable
   }
 
 
-model : String -> Model
-model name =
-  Model name Nothing Nothing Nothing
-
-
-getTable : String -> (Result Http.Error Game -> msg) -> Cmd msg
-getTable baseUrl msg =
-  Http.get gameDecoder
-  (baseUrl ++ "tables")
-    |> Task.perform Err Ok
-    |> Cmd.map msg
-
-
-init : String -> Context msg Msg -> Cmd msg
-init name ctx =
-  Task.map2
-    (,)
-    now
-    (
-      (Http.get awaitingTableDecoder
-        (baseUrl ++ "awaitingTables/" ++ name)
-        |> Task.map Ok
-      )
-      |> onError (\error ->
-        (Http.get gameDecoder
-          (baseUrl ++ "game/" ++ name))
-          |> Task.map Err
-      )
+model : Model
+model =
+  Model 0 Nothing Nothing Nothing
+    ( initialGame "TestGame"
+      |> encodeGame
+      |> decodeString gameDecoder
     )
-  |> Task.perform Err Ok
-  |> Cmd.map UpdateTables
+    ( AwaitingTable "AwaitingTable" [ ("player one", 0) ]
+      |> encodeAwaitingTable
+      |> decodeString awaitingTableDecoder
+    )
+
+
+init : Context msg Msg -> Cmd msg
+init ctx =
+  Random.generate BaseRandom (Random.int 0 Random.maxInt)
   |> Cmd.map ctx.mapMsg
 
 
@@ -101,13 +71,16 @@ subs ctx model =
 
 
 type Msg
-  = UpdateTables (Result Http.Error (Time, Result Game AwaitingTable))
+  = BaseRandom Int
+  | UpdateTables (Result Http.Error (Time, Result Game AwaitingTable))
   | CheckUpdate Time
 
 
 update : ComponentUpdate Model msg Msg
 update ctx action model =
   case action of
+    BaseRandom int ->
+      { model | seed = int } ! []
     UpdateTables result ->
       case result of
         Ok (time, res) ->
@@ -131,7 +104,7 @@ update ctx action model =
           if last + (3 * second) < time then
             { model
               | lastFinishedTableUpdate = Nothing
-            } ! [ init model.name ctx ]
+            } ! [ init ctx ]
           else
             model ! []
         _ ->
@@ -141,18 +114,24 @@ update ctx action model =
 -- VIEW
 
 
+testHeader name passed =
+  h4 [] [ text ((if passed then "[SUCC] " else "[FAIL] ") ++ name)]
+
+
+resultSuccess result =
+  case result of
+    Ok _ -> True
+    Err _ -> False
+
+
 view : ComponentView Model msg Msg
 view ctx model =
-  Page "Table" <|
-    multiCellRow
-      [ (2, [ div [ class "table-chat" ]
-          [ div [ class "chat-header" ] [ text "Chat" ]
-          , div [] [ text "fsdds" ]
-          , div [] [ text "asdf" ]
-          ] ])
-      , (8, [ div [ class "table-main" ] [ text "main" ] ])
-      , (2, [ div [ class "table-options" ]
-          [div [ class "table-options-header" ] [ text "Game" ]
-          ] ])
+  Page ("Tests [seed: " ++ (toString model.seed) ++ "]" ) <|
+    fullRow
+      [ testHeader "serialize/deserialize Game" (resultSuccess model.deserializedGame) 
+      , div [] [ text <| toString model.deserializedGame ]
+      , testHeader "serialize/deserialize AwaitingTable" (resultSuccess model.deserializedAwaitingTable) 
+      , div [] [ text <| toString model.deserializedAwaitingTable ]
       ]
+
 

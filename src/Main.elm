@@ -37,6 +37,7 @@ urlParser =
     parser = 
       oneOf
         [ format ME_Dashboard (s "Dashboard")
+        , format ME_Tests (s "Tests")
         , format ME_Table (s "Table" </> string)
         , format ME_Task (s "Task" </> (
           oneOf

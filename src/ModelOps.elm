@@ -16,6 +16,7 @@ import Member.Member as Member
 import Report.Report as Report
 import Dashboard
 import TableView
+import Tests
 import LoginScreen
 import SessionModel exposing (..) 
 import ClientSession exposing (..) 
@@ -31,11 +32,12 @@ emptyModel =
   , menu = menuDefinition
   , config = (CssConfig (Size 0 0) False)
   , dashboardComponent = Dashboard.component
-  , tableComponent = TableView.component
+  , tableComponent = TableView.component "nonexistent"
   , loginComponent = LoginScreen.component PlayAsGuest
   , taskComponent = Task.component
   , memberComponent = Member.component
   , reportComponent = Report.component
+  , testsComponent = Tests.component
   }
 
 
@@ -71,7 +73,7 @@ sense.
 -}
 urlUpdate : Result String MenuEntry -> Model -> (Model, Cmd Msg)
 urlUpdate result model =
-  case Debug.log "urlUpdate" result of
+  case result of
     Ok place ->
       case place of
         ME_Task page ->
@@ -86,11 +88,20 @@ urlUpdate result model =
           setPlaceInnerComponent .reportComponent
             setReportComponent model place page
           
+        ME_Tests ->
+          setPlace (Context Tests) .testsComponent model place
+          
         ME_Dashboard ->
           setPlace (Context Dashboard) .dashboardComponent model place
           
         ME_Table name ->
-          setPlace (Context Table) .tableComponent model place
+          setPlace (Context Table) .tableComponent 
+            (case name == model.tableComponent.model.name of
+               True -> model
+               False ->
+                 -- create new component on each url change
+                 { model | tableComponent = TableView.component name })
+            place
 
     Err errorMsg ->
       let

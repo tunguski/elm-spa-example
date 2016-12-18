@@ -9,13 +9,15 @@ import Json.Decode as Json exposing (..)
 import Result exposing (toMaybe)
 import Http
 import Task
+import Dict
 import Time exposing (..)
 
 
 import Config exposing (..)
 import Component exposing (..)
 import BaseModel exposing (..)
-import TableModel exposing (..)
+import TichuModel exposing (..)
+import TichuModelJson exposing (..)
 
 
 component : Component Model msg Msg
@@ -32,7 +34,7 @@ type alias Player =
 
 type alias Model =
   { newTableName : String
-  , openTables : Maybe (List Table)
+  , openTables : Maybe (List AwaitingTable)
   , players : Maybe (List Player)
   , lastFinishedTableUpdate : Maybe Time
   }
@@ -43,10 +45,10 @@ model =
   Model "" Nothing Nothing Nothing
 
 
-getTables : String -> (Result Http.Error (List Table) -> msg) -> Cmd msg
-getTables baseUrl msg =
-  Http.get (listDecoder tableDecoder)
-  (baseUrl ++ "tables")
+getAwaitingTables : String -> (Result Http.Error (List AwaitingTable) -> msg) -> Cmd msg
+getAwaitingTables baseUrl msg =
+  Http.get (listDecoder awaitingTableDecoder)
+  (baseUrl ++ "awaitingTables")
     |> Task.perform Err Ok
     |> Cmd.map msg 
 
@@ -54,8 +56,8 @@ getTables baseUrl msg =
 createTable : String -> String -> (Result Http.Error String -> msg) -> Cmd msg
 createTable baseUrl tableName msg =
   Http.post Json.string
-  (baseUrl ++ "tables")
-  (Http.string tableName)
+  (baseUrl ++ "awaitingTables/" ++ tableName)
+  (Http.string "")
     |> Task.perform Err Ok
     |> Cmd.map msg 
 
@@ -64,11 +66,9 @@ init : Context msg Msg -> Cmd msg
 init ctx =
   Task.map2
     (,)
-    --(\a b -> ctx.mapMsg (UpdateTables a b))
-    --(UpdateTables >> ctx.mapMsg)
     now
-    (Http.get (listDecoder tableDecoder)
-      (baseUrl ++ "tables"))
+    (Http.get (listDecoder awaitingTableDecoder)
+      (baseUrl ++ "awaitingTables"))
   |> Task.perform Err Ok
   |> Cmd.map UpdateTables
   |> Cmd.map ctx.mapMsg
@@ -87,7 +87,7 @@ type Msg
     = TableName String
     | CreateNewTable
     | OpenTable String
-    | UpdateTables (Result Http.Error (Time, List Table))
+    | UpdateTables (Result Http.Error (Time, List AwaitingTable))
     | CheckUpdate Time
 
 
@@ -165,8 +165,10 @@ view ctx model =
                 tables |> List.map (\table ->
                   tr []
                     [ td [] [ a [ href ("#/Table/" ++ table.name) ] [ text table.name ] ]
-                    , td [] [ text ( toString (List.length table.players) ++ "/4" ) ]
-                    , td [] (List.map text table.players)
+                    , td [] [ text ( toString (List.length table.users) ++ "/4" ) ]
+                    , td [] (
+                        List.map (fst >> text) table.users
+                      )
                     ]
                 )
               Nothing ->
