@@ -6,7 +6,7 @@ import Html.App as Html
 import Html.Attributes exposing (..)
 import Html.Events exposing (onInput, onClick)
 import Navigation 
-import Json.Decode as Json exposing (..)
+import Json.Decode as Json exposing (decodeString)
 import Result exposing (toMaybe)
 import Http
 import Random
@@ -17,6 +17,7 @@ import Time exposing (Time, every, second, now)
 import Config exposing (..)
 import Component exposing (..)
 import BaseModel exposing (..)
+import Rest exposing (restCollection)
 import TichuModel exposing (..)
 import TichuModelJson exposing (..)
 import TableView exposing (..)
@@ -24,9 +25,7 @@ import TableView exposing (..)
 
 component : Component Model msg Msg
 component = 
-  Component model update view 
-      (Just init) 
-      (Just subs) 
+  Component model update view (Just init) Nothing
 
 
 -- MODEL
@@ -39,6 +38,13 @@ type alias Model =
   , lastFinishedTableUpdate : Maybe Time
   , deserializedGame : Result String Game
   , deserializedAwaitingTable : Result String AwaitingTable
+  , playAGame : GameState 
+  }
+
+
+type alias GameState =
+  { game : Maybe (Result String Game)
+  , internal : Game
   }
 
 
@@ -53,6 +59,7 @@ model =
       |> encodeAwaitingTable
       |> decodeString awaitingTableDecoder
     )
+    (GameState Nothing (initialGame "test"))
 
 
 init : Context msg Msg -> Cmd msg
@@ -61,10 +68,18 @@ init ctx =
   |> Cmd.map ctx.mapMsg
 
 
-subs : Context msg Msg -> model -> Sub msg
-subs ctx model =
-  every second CheckUpdate 
-    |> Sub.map ctx.mapMsg
+initPlayAGame model =
+  awaitingTables.postCommand (toString model.seed)
+  |> andThen (\_ -> awaitingTables.get (toString model.seed))
+  |> andThen (\_ -> awaitingTables.get (toString model.seed))
+
+
+-- REST
+
+
+awaitingTables =
+  restCollection baseUrl "awaitingTables" 
+    awaitingTableDecoder awaitingTableEncoder
 
 
 -- UPDATE
@@ -114,6 +129,20 @@ update ctx action model =
 -- VIEW
 
 
+maybeTestHeader name passed =
+  h4 [] [ text (
+      case passed of
+        Just p ->
+          ((if p then "[SUCC] " else "[FAIL] ") ++ name)
+        Nothing ->
+          ("[....] " ++ name)
+    )]
+
+
+maybeResultSuccess result =
+  Maybe.map resultSuccess result
+
+
 testHeader name passed =
   h4 [] [ text ((if passed then "[SUCC] " else "[FAIL] ") ++ name)]
 
@@ -124,6 +153,16 @@ resultSuccess result =
     Err _ -> False
 
 
+displayResult element =
+  div [] [ 
+    case element of
+      Just game ->
+        text <| toString element 
+      Nothing ->
+        i [ (class "fa fa-spinner fa-spin fa-fw") ] []
+  ]
+
+
 view : ComponentView Model msg Msg
 view ctx model =
   Page ("Tests [seed: " ++ (toString model.seed) ++ "]" ) <|
@@ -132,6 +171,8 @@ view ctx model =
       , div [] [ text <| toString model.deserializedGame ]
       , testHeader "serialize/deserialize AwaitingTable" (resultSuccess model.deserializedAwaitingTable) 
       , div [] [ text <| toString model.deserializedAwaitingTable ]
+      , maybeTestHeader "Play a game" (maybeResultSuccess model.playAGame.game) 
+      , displayResult model.playAGame.game
       ]
 
 

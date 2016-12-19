@@ -13,9 +13,10 @@ import Dict
 import Time exposing (..)
 
 
-import Config exposing (..)
-import Component exposing (..)
 import BaseModel exposing (..)
+import Component exposing (..)
+import Config exposing (..)
+import Rest exposing (RestCollection, restCollection, perform)
 import TichuModel exposing (..)
 import TichuModelJson exposing (..)
 
@@ -45,39 +46,21 @@ model =
   Model "" Nothing Nothing Nothing
 
 
-getAwaitingTables : String -> (Result Http.Error (List AwaitingTable) -> msg) -> Cmd msg
-getAwaitingTables baseUrl msg =
-  Http.get (listDecoder awaitingTableDecoder)
-  (baseUrl ++ "awaitingTables")
-    |> Task.perform Err Ok
-    |> Cmd.map msg 
-
-
-createTable : String -> String -> (Result Http.Error String -> msg) -> Cmd msg
-createTable baseUrl tableName msg =
-  Http.post Json.string
-  (baseUrl ++ "awaitingTables/" ++ tableName)
-  (Http.string "")
-    |> Task.perform Err Ok
-    |> Cmd.map msg 
+awaitingTables =
+  restCollection baseUrl "awaitingTables" 
+    awaitingTableDecoder awaitingTableEncoder
 
 
 init : Context msg Msg -> Cmd msg
 init ctx =
-  Task.map2
-    (,)
-    now
-    (Http.get (listDecoder awaitingTableDecoder)
-      (baseUrl ++ "awaitingTables"))
-  |> Task.perform Err Ok
-  |> Cmd.map UpdateTables
-  |> Cmd.map ctx.mapMsg
+  Task.map2 (,) now awaitingTables.all
+  |> perform (UpdateTables >> ctx.mapMsg)
 
 
 subs : Context msg Msg -> model -> Sub msg
 subs ctx model =
   every second CheckUpdate 
-    |> Sub.map ctx.mapMsg
+  |> Sub.map ctx.mapMsg
 
 
 -- UPDATE
@@ -98,8 +81,8 @@ update ctx action model =
       { model | newTableName = name } ! []
     CreateNewTable ->
       model 
-        ! [ createTable baseUrl model.newTableName 
-              (\r -> ctx.mapMsg <| OpenTable model.newTableName) 
+        ! [ awaitingTables.postCommand model.newTableName 
+            |> perform (\r -> ctx.mapMsg <| OpenTable model.newTableName) 
           ]
     OpenTable name ->
       model 
