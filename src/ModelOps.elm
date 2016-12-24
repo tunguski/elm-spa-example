@@ -1,11 +1,11 @@
 module ModelOps exposing (..)
 
-
-import Navigation
-import Task exposing (perform)
+import Navigation exposing (Location)
+import Task
 import Window exposing (Size)
 import Regex exposing (..)
 import String exposing (dropLeft)
+import UrlParser exposing (..)
 
 
 import Config exposing (..)
@@ -18,93 +18,105 @@ import Dashboard
 import TableView
 import Tests
 import LoginScreen
-import SessionModel exposing (..) 
-import ClientSession exposing (..) 
+import SessionModel exposing (..)
+import ClientSession exposing (..)
 import Menu exposing (..)
 import Msg exposing (..)
 
 
 emptyModel : Model
 emptyModel =
-  { baseUrl = baseUrl
-  , place = ME_Dashboard
-  , session = Nothing
-  , menu = menuDefinition
-  , config = (CssConfig (Size 0 0) False)
-  , dashboardComponent = Dashboard.component
-  , tableComponent = TableView.component "nonexistent"
-  , loginComponent = LoginScreen.component PlayAsGuest
-  , taskComponent = Task.component
-  , memberComponent = Member.component
-  , reportComponent = Report.component
-  , testsComponent = Tests.component
-  }
+    { baseUrl = baseUrl
+    , place = ME_Dashboard
+    , session = Nothing
+    , menu = menuDefinition
+    , config = (CssConfig (Size 0 0) False)
+    , dashboardComponent = Dashboard.component
+    , tableComponent = TableView.component "nonexistent"
+    , loginComponent = LoginScreen.component PlayAsGuest
+    , taskComponent = Task.component
+    , memberComponent = Member.component
+    , reportComponent = Report.component
+    , testsComponent = Tests.component
+    }
 
 
-initModel : Result String MenuEntry -> (Model, Cmd Msg)
+initModel : Location -> ( Model, Cmd Msg )
 initModel url =
-  let
-    exec = perform (\_ -> (Resize (Size 0 0))) (Resize) Window.size 
-    (model, cmd) = urlUpdate url emptyModel
-    session = getSession baseUrl GetSession
-    place =
-      case url of
-        Ok entry ->
-          entry
-        _ ->
-          ME_Dashboard
-  in
-    ({ model | place = place }, Cmd.batch [ exec, session, cmd ])
+    let
+        exec =
+            Task.perform (Resize) Window.size
+
+        ( model, cmd ) =
+            emptyModel ! [] 
+
+        session =
+            getSession baseUrl GetSession
+
+        parsed =
+          parseHash urlParser url 
+
+        place =
+            case parsed of
+                Just entry ->
+                    entry
+
+                _ ->
+                    ME_Dashboard
+    in
+        ( { model | place = place }, Cmd.batch [ exec, session, cmd ] )
+
+
+-- URL PARSERS
+
+
+urlParser : Parser (MenuEntry -> a) a
+urlParser =
+    oneOf
+        [ map ME_Dashboard (s "Dashboard")
+        , map ME_Tests (s "Tests")
+        , map ME_Table (s "Table" </> string)
+        , map ME_Task
+            (s "Task"
+                </> (oneOf
+                        [ map Task.Search (s "Search")
+                        , map Task.Add (s "Add")
+                        ]
+                    )
+            )
+        , map ME_Member
+            (s "Member"
+                </> (oneOf
+                        [ map Member.Search (s "Search")
+                        , map Member.Add (s "Add")
+                        ]
+                    )
+            )
+        , map ME_Report
+            (s "Report"
+                </> (oneOf
+                        [ map Report.Search (s "Search")
+                        , map Report.Add (s "Add")
+                        ]
+                    )
+            )
+        ]
+
+
+locationToMsg location =
+  parseHash urlParser location
+  |> UrlUpdate
 
 
 toUrl : Model -> String
 toUrl model =
-  let
-    newUrl =
-      (replace All (regex " +") (\m -> "/") <|
-        "#/" ++ (dropLeft 3 <| toString model.place))
-  in
-    Debug.log "toUrl" newUrl
+    let
+        newUrl =
+            (replace All (regex " +") (\m -> "/") <|
+                "#/"
+                    ++ (dropLeft 3 <| toString model.place)
+            )
+    in
+        Debug.log "toUrl" newUrl
 
 
-{-| The URL is turned into a result. If the URL is valid, we just update our
-model to the new count. If it is not a valid URL, we modify the URL to make
-sense.
--}
-urlUpdate : Result String MenuEntry -> Model -> (Model, Cmd Msg)
-urlUpdate result model =
-  case result of
-    Ok place ->
-      case place of
-        ME_Task page ->
-          setPlaceInnerComponent .taskComponent
-            setTaskComponent model place page
-
-        ME_Member page ->
-          setPlaceInnerComponent .memberComponent
-            setMemberComponent model place page
-
-        ME_Report page ->
-          setPlaceInnerComponent .reportComponent
-            setReportComponent model place page
-          
-        ME_Tests ->
-          setPlace (Context Tests) .testsComponent model place
-          
-        ME_Dashboard ->
-          setPlace (Context Dashboard) .dashboardComponent model place
-          
-        ME_Table name ->
-          setPlace (Context Table) .tableComponent 
-            (case name == model.tableComponent.model.name of
-               True -> model
-               False ->
-                 -- create new component on each url change
-                 { model | tableComponent = TableView.component name })
-            place
-
-    Err errorMsg ->
-      let
-        error = Debug.log "Error message" errorMsg
-      in
-        ({ model | place = ME_Dashboard }, Navigation.modifyUrl "#/Dashboard")

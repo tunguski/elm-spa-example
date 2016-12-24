@@ -1,10 +1,10 @@
 module Css exposing (generateCss)
 
-
 import String exposing (concat)
 
 
-generateCss config = concat [ """
+generateCss config =
+    concat [ """
 
 @import url(//fonts.googleapis.com/css?family=Lato);
 @import url(https://fonts.googleapis.com/css?family=Roboto);
@@ -16,11 +16,11 @@ body, * {
 
 @media (min-width: 768px) {
   #side-menu {
-     height: """, toString (config.windowSize.height - 51), """px; 
+     height: """, toString (config.windowSize.height - 51), """px;
   }
-  
+
   #page-wrapper {
-     min-height: """, toString (config.windowSize.height - 51), """px; 
+     min-height: """, toString (config.windowSize.height - 51), """px;
   }
 }
 
@@ -29,7 +29,7 @@ body, * {
     margin: 0;
   }
 }
-  
+
 
 
 @media (max-width: 768px) {
@@ -68,8 +68,8 @@ nav.navbar-default {
 }
 
 
-.highlighted { 
-  background: yellow; 
+.highlighted {
+  background: yellow;
 }
 
 .fa.arrow {
@@ -144,11 +144,11 @@ nav.navbar-default {
   .sidebar-small .nav > li {
     text-align: center;
   }
-  
+
   .sidebar-small .nav > li.last-in-group {
     border-bottom-color: #e7e7e7;
   }
-  
+
   .side-menu-toggler {
     border-top: 1px solid #ddd;
     border-bottom-width: 0;
@@ -168,7 +168,7 @@ nav.navbar-default {
   .nav-pills > li {
     float: none;
   }
-  
+
   .nav-pills > li + li {
     margin-top: 2px;
     margin-left: 0;
@@ -226,12 +226,12 @@ h1, .h1, h2, .h2, h3, .h3 {
   .sidebar-small .sidebar {
     width: 50px;
   }
-  
+
   .sidebar-small .menu-header,
   .sidebar-small a span {
     display: none;
   }
-  
+
   .sidebar-small #page-wrapper {
     margin: 0 0 0 50px;
   }

@@ -1,10 +1,7 @@
 module Msg exposing (..)
 
-
 import Window exposing (Size)
 import Http
-
-
 import Config
 import Component exposing (Component)
 import Task.Task as Task
@@ -18,31 +15,28 @@ import Tests
 
 
 type Msg
-  = None
-  | InitialWindowSize
-  | ToggleHamburgerMenu 
-  | PlayAsGuest
-  | GetSession (Result Http.Error Session)
-
-  | Resize Size 
-  | ToggleSideMenu Bool 
-  | ChangeView MenuEntry
-
-  | Login LoginScreen.Msg
-  | Dashboard Dashboard.Msg 
-  | Task Task.Msg
-  | Member Member.Msg
-  | Report Report.Msg
-  | Table TableView.Msg
-  | Tests Tests.Msg
+    = None
+    | UrlUpdate (Maybe MenuEntry)
+    | InitialWindowSize
+    | ToggleHamburgerMenu
+    | PlayAsGuest
+    | GetSession (Result Http.Error Session)
+    | Resize Size
+    | ToggleSideMenu Bool
+    | ChangeView MenuEntry
+    | Login LoginScreen.Msg
+    | Dashboard Dashboard.Msg
+    | Task Task.Msg
+    | Member Member.Msg
+    | Report Report.Msg
+    | Table TableView.Msg
+    | Tests Tests.Msg
 
 
 type MenuEntry
-  = ME_Dashboard 
-  | ME_Table String
-  | ME_Task Task.Pages
-  | ME_Member Member.Pages
-  | ME_Report Report.Pages
-  | ME_Tests
-
-
+    = ME_Dashboard
+    | ME_Table String
+    | ME_Task Task.Pages
+    | ME_Member Member.Pages
+    | ME_Report Report.Pages
+    | ME_Tests

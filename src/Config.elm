@@ -1,6 +1,5 @@
 module Config exposing (..)
 
 
-baseUrl = "/api/"
-
-
+baseUrl =
+    "/api/"
