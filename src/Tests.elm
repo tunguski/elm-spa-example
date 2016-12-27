@@ -1,5 +1,6 @@
 module Tests exposing (..)
 
+import Array exposing (Array)
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (onInput, onClick)
@@ -11,10 +12,12 @@ import Task exposing (..)
 import Time exposing (Time, every, second, now)
 
 
+import ClientApi exposing (..)
 import Config exposing (..)
 import Component exposing (..)
 import BaseModel exposing (..)
 import Rest exposing (..)
+import SessionModel exposing (..)
 import TichuModel exposing (..)
 import TichuModelJson exposing (..)
 import TableView exposing (..)
@@ -41,7 +44,9 @@ type alias Model =
 
 
 type alias GameState =
-    { game : Maybe (Result String Game)
+    { sessions : Array Session
+    , playerState : List Game
+    , game : Maybe (Result String Game)
     , internal : Game
     }
 
@@ -60,14 +65,17 @@ model =
             |> encodeAwaitingTable
             |> decodeString awaitingTableDecoder
         )
-        (GameState Nothing (initialGame "test"))
+        (GameState Array.empty [] Nothing (initialGame "test"))
 
 
 init : Context msg Msg -> Cmd msg
 init ctx =
-    Random.generate BaseRandom (Random.int 0 Random.maxInt)
-        |> Cmd.map ctx.mapMsg
-
+    Cmd.batch
+        [ Random.generate BaseRandom (Random.int 0 Random.maxInt)
+          |> Cmd.map ctx.mapMsg
+        , initPlayAGame
+          |> Cmd.map ctx.mapMsg
+        ]
 
 
 -- 1. create four guest players; remember their tokens
@@ -77,22 +85,22 @@ init ctx =
 -- 5. play the game (how?)
 
 
-initPlayAGame model =
-    postCommand (toString model.seed) awaitingTables
-        |> andThen (\_ -> get (toString model.seed) awaitingTables)
-        |> andThen (\_ -> get (toString model.seed) awaitingTables)
-
-
-
--- REST
-
-
-awaitingTables =
-    restCollection baseUrl
-        "awaitingTables"
-        awaitingTableDecoder
-        awaitingTableEncoder
-
+initPlayAGame =
+    let
+        getGuestToken =
+            sessions
+                |> withQueryParams [ ("noHeader", "true") ]
+                |> get "guest"
+    in
+        Task.map4 (,,,)
+            getGuestToken
+            getGuestToken
+            getGuestToken
+            getGuestToken
+        |> Task.attempt PlayAGameGetSession
+--        postCommand (toString model.seed) awaitingTables
+--            |> andThen (\_ -> get (toString model.seed) awaitingTables)
+--            |> andThen (\_ -> get (toString model.seed) awaitingTables)
 
 
 -- UPDATE
@@ -102,11 +110,24 @@ type Msg
     = BaseRandom Int
     | UpdateTables (RestResult ( Time, Result Game AwaitingTable ))
     | CheckUpdate Time
+    | PlayAGameGetSession (RestResult (Session, Session, Session, Session))
 
 
 update : ComponentUpdate Model msg Msg
 update ctx action model =
     case action of
+        PlayAGameGetSession result ->
+            let
+                playAGame = model.playAGame
+            in
+                case result of
+                    Ok (s1, s2, s3, s4) ->
+                        { model 
+                        | playAGame = { playAGame | sessions = Array.fromList [ s1, s2, s3, s4 ] }
+                        } ! []
+                    Err _ ->
+                        { model | seed = model.seed } ! []
+
         BaseRandom int ->
             { model | seed = int } ! []
 

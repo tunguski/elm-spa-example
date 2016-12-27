@@ -4,13 +4,14 @@ import Navigation
 import Task
 
 
-import ClientSession exposing (..)
+import ClientApi exposing (..)
 import Config exposing (..)
 import Component exposing (..)
 import Msg exposing (..)
 import Model exposing (..)
 import ModelOps exposing (..)
 import LoginScreen
+import Rest exposing (..)
 import SessionModel exposing (..)
 import TableView
 
@@ -40,7 +41,8 @@ update action model =
                 { model | menu = { menu | expanded = not menu.expanded } } ! []
 
         PlayAsGuest ->
-            model ! [ createGuestSession baseUrl GetSession ]
+            model ! [ get "guest" sessions
+                      |> Task.attempt GetSession ]
 
         Resize size ->
             let

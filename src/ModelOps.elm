@@ -8,20 +8,21 @@ import String exposing (dropLeft)
 import UrlParser exposing (..)
 
 
-import Config exposing (..)
-import Model exposing (..)
+import ClientApi exposing (..)
 import Component exposing (..)
-import Task.Task as Task
-import Member.Member as Member
-import Report.Report as Report
+import Config exposing (..)
 import Dashboard
-import TableView
-import Tests
 import LoginScreen
-import SessionModel exposing (..)
-import ClientSession exposing (..)
+import Member.Member as Member
 import Menu exposing (..)
 import Msg exposing (..)
+import Model exposing (..)
+import Report.Report as Report
+import Rest exposing (..)
+import SessionModel exposing (..)
+import Task.Task as Task
+import TableView
+import Tests
 
 
 emptyModel : Model
@@ -51,7 +52,8 @@ initModel url =
             emptyModel ! [] 
 
         session =
-            getSession baseUrl GetSession
+            get "" sessions 
+            |> Task.attempt GetSession
 
         parsed =
           parseHash urlParser url 
