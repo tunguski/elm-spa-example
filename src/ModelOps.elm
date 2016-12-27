@@ -48,9 +48,6 @@ initModel url =
         exec =
             Task.perform (Resize) Window.size
 
-        ( model, cmd ) =
-            emptyModel ! [] 
-
         session =
             get "" sessions 
             |> Task.attempt GetSession
@@ -58,15 +55,10 @@ initModel url =
         parsed =
           parseHash urlParser url 
 
-        place =
-            case parsed of
-                Just entry ->
-                    entry
-
-                _ ->
-                    ME_Dashboard
+        ( model, cmd ) =
+            changeLocation parsed emptyModel
     in
-        ( { model | place = place }, Cmd.batch [ exec, session, cmd ] )
+        model ! [ exec, session, cmd ]
 
 
 -- URL PARSERS
@@ -103,6 +95,54 @@ urlParser =
                     )
             )
         ]
+
+
+changeLocation location model =
+  case location of
+      Just place ->
+          case place of
+              ME_Task page ->
+                  setPlaceInnerComponent .taskComponent
+                      setTaskComponent
+                      model
+                      place
+                      page
+
+              ME_Member page ->
+                  setPlaceInnerComponent .memberComponent
+                      setMemberComponent
+                      model
+                      place
+                      page
+
+              ME_Report page ->
+                  setPlaceInnerComponent .reportComponent
+                      setReportComponent
+                      model
+                      place
+                      page
+
+              ME_Tests ->
+                  setPlace (Context Tests) .testsComponent model place
+
+              ME_Dashboard ->
+                  setPlace (Context Dashboard) .dashboardComponent model place
+
+              ME_Table name ->
+                  setPlace (Context Table)
+                      .tableComponent
+                      (case name == model.tableComponent.model.name of
+                          True ->
+                              model
+
+                          False ->
+                              -- create new component on each url change
+                              { model | tableComponent = TableView.component name }
+                      )
+                      place
+
+      Nothing ->
+          ( { model | place = ME_Dashboard }, Navigation.modifyUrl "#/Dashboard" )
 
 
 locationToMsg location =

@@ -70,6 +70,8 @@ model =
 
 init : Context msg Msg -> Cmd msg
 init ctx =
+--  Random.generate BaseRandom (Random.int 0 Random.maxInt)
+--    |> Cmd.map ctx.mapMsg
     Cmd.batch
         [ Random.generate BaseRandom (Random.int 0 Random.maxInt)
           |> Cmd.map ctx.mapMsg
@@ -83,13 +85,11 @@ init ctx =
 -- 3. join by the rest
 -- 4. all press start
 -- 5. play the game (how?)
-
-
 initPlayAGame =
     let
         getGuestToken =
             sessions
-                |> withQueryParams [ ("noHeader", "true") ]
+                |> withQueryParams [ ("noHeader", "true"), ("forceNew", "true") ]
                 |> get "guest"
     in
         Task.map4 (,,,)

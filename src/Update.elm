@@ -121,48 +121,6 @@ update action model =
                 msg
 
         UrlUpdate location ->
-          case location of
-              Just place ->
-                  case place of
-                      ME_Task page ->
-                          setPlaceInnerComponent .taskComponent
-                              setTaskComponent
-                              model
-                              place
-                              page
-      
-                      ME_Member page ->
-                          setPlaceInnerComponent .memberComponent
-                              setMemberComponent
-                              model
-                              place
-                              page
-      
-                      ME_Report page ->
-                          setPlaceInnerComponent .reportComponent
-                              setReportComponent
-                              model
-                              place
-                              page
-      
-                      ME_Tests ->
-                          setPlace (Context Tests) .testsComponent model place
-      
-                      ME_Dashboard ->
-                          setPlace (Context Dashboard) .dashboardComponent model place
-      
-                      ME_Table name ->
-                          setPlace (Context Table)
-                              .tableComponent
-                              (case name == model.tableComponent.model.name of
-                                  True ->
-                                      model
-      
-                                  False ->
-                                      -- create new component on each url change
-                                      { model | tableComponent = TableView.component name }
-                              )
-                              place
-      
-              Nothing ->
-                  ( { model | place = ME_Dashboard }, Navigation.modifyUrl "#/Dashboard" )
+            changeLocation location model
+
+

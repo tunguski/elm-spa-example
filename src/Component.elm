@@ -71,18 +71,12 @@ componentSubs ctx component =
 
 updateModel ctx getter setter model msg =
     let
-        cp =
-            Debug.log "updateModel" <| getter model
+        cp = getter model
 
         ( updatedModel, cmd ) =
             cp.update ctx msg cp.model
     in
         ( setter { cp | model = updatedModel } model, cmd )
-
-
-
-{-  -}
---setPlaceInnerComponent : (Model -> Component cModel cMsg) -> (Component cModel cMsg -> Model -> Model) -> Model -> MenuEntry -> page -> (Model, Cmd Msg)
 
 
 setPlaceInnerComponent getter setter model place page =
@@ -97,10 +91,6 @@ setPlaceInnerComponent getter setter model place page =
             { model | place = place }
         )
             ! []
-
-
-
---setPlace : (Model -> Component cModel cMsg) -> Model -> MenuEntry -> (Model, Cmd Msg)
 
 
 setPlace ctx getter model place =
