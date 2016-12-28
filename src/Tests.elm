@@ -110,7 +110,9 @@ type Msg
     = BaseRandom Int
     | UpdateTables (RestResult ( Time, Result Game AwaitingTable ))
     | CheckUpdate Time
+    -- play a game messages
     | PlayAGameGetSession (RestResult (Session, Session, Session, Session))
+    | PlayAGameOpenTable
 
 
 update : ComponentUpdate Model msg Msg
@@ -124,9 +126,16 @@ update ctx action model =
                     Ok (s1, s2, s3, s4) ->
                         { model 
                         | playAGame = { playAGame | sessions = Array.fromList [ s1, s2, s3, s4 ] }
-                        } ! []
+                        } ! [ awaitingTables
+                              |> withHeader "X-Test-Session" s1.token
+                              |> postCommand ("playAGame " ++ toString model.seed)
+                              |> Task.attempt (\r -> ctx.mapMsg <| PlayAGameOpenTable) ]
                     Err _ ->
                         { model | seed = model.seed } ! []
+
+
+        PlayAGameOpenTable ->
+            model ! []
 
         BaseRandom int ->
             { model | seed = int } ! []
