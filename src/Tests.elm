@@ -74,6 +74,9 @@ init ctx =
     |> Cmd.map ctx.mapMsg
 
 
+type alias Quad item = (item, item, item, item)
+
+
 -- 1. create four guest players; remember their tokens
 -- 2. create table by first of them; pass 'test-seed=<constant seed>' header
 -- 3. join by the rest
@@ -92,7 +95,7 @@ initPlayAGame model =
         joinTable session =
             awaitingTables
             |> withHeader "X-Test-Session" session.token
-            |> get ("playAGame " ++ toString model.seed)
+            |> get ("playAGame" ++ toString model.seed)
 
     in
         Task.map4 (,,,)
@@ -104,21 +107,17 @@ initPlayAGame model =
             Task.map5 (,,,,)
                 (awaitingTables
                 |> withHeader "X-Test-Session" s1.token
-                |> postCommand ("playAGame " ++ toString model.seed))
+                |> postCommand ("playAGame" ++ toString model.seed))
                 (joinTable s1)
                 (joinTable s2)
                 (joinTable s3)
                 (joinTable s4)
                 |> Task.andThen (\(cmd, t1, t2, t3, t4) ->
+                    -- todo: step 4th
                     Task.succeed ((s1, s2, s3, s4), (t1, t2, t3, t4))
                 )
         )
         |> Task.attempt PlayAGameGetSession
---        postCommand (toString model.seed) awaitingTables
---            |> andThen (\_ -> get (toString model.seed) awaitingTables)
---            |> andThen (\_ -> get (toString model.seed) awaitingTables)
-
-
 
 
 -- UPDATE
@@ -129,7 +128,11 @@ type Msg
     | UpdateTables (RestResult ( Time, Result Game AwaitingTable ))
     | CheckUpdate Time
     -- play a game messages
-    | PlayAGameGetSession (RestResult ((Session, Session, Session, Session), (AwaitingTable, AwaitingTable, AwaitingTable, AwaitingTable)))
+    | PlayAGameGetSession (RestResult 
+            ( Quad Session
+            , Quad AwaitingTable
+            )
+        )
     | PlayAGameOpenTable
 
 
