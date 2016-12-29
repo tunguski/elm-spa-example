@@ -70,14 +70,8 @@ model =
 
 init : Context msg Msg -> Cmd msg
 init ctx =
---  Random.generate BaseRandom (Random.int 0 Random.maxInt)
---    |> Cmd.map ctx.mapMsg
-    Cmd.batch
-        [ Random.generate BaseRandom (Random.int 0 Random.maxInt)
-          |> Cmd.map ctx.mapMsg
-        , initPlayAGame
-          |> Cmd.map ctx.mapMsg
-        ]
+  Random.generate BaseRandom (Random.int 0 Random.maxInt)
+    |> Cmd.map ctx.mapMsg
 
 
 -- 1. create four guest players; remember their tokens
@@ -85,22 +79,46 @@ init ctx =
 -- 3. join by the rest
 -- 4. all press start
 -- 5. play the game (how?)
-initPlayAGame =
+initPlayAGame model =
     let
         getGuestToken =
             sessions
-                |> withQueryParams [ ("noHeader", "true"), ("forceNew", "true") ]
-                |> get "guest"
+            |> withQueryParams 
+                [ ("noHeader", "true")
+                , ("forceNew", "true")
+                , ("seed", "0")
+                ]
+            |> get "guest"
+        joinTable session =
+            awaitingTables
+            |> withHeader "X-Test-Session" session.token
+            |> get ("playAGame " ++ toString model.seed)
+
     in
         Task.map4 (,,,)
             getGuestToken
             getGuestToken
             getGuestToken
             getGuestToken
+        |> Task.andThen (\(s1, s2, s3, s4) ->
+            Task.map5 (,,,,)
+                (awaitingTables
+                |> withHeader "X-Test-Session" s1.token
+                |> postCommand ("playAGame " ++ toString model.seed))
+                (joinTable s1)
+                (joinTable s2)
+                (joinTable s3)
+                (joinTable s4)
+                |> Task.andThen (\(cmd, t1, t2, t3, t4) ->
+                    Task.succeed ((s1, s2, s3, s4), (t1, t2, t3, t4))
+                )
+        )
         |> Task.attempt PlayAGameGetSession
 --        postCommand (toString model.seed) awaitingTables
 --            |> andThen (\_ -> get (toString model.seed) awaitingTables)
 --            |> andThen (\_ -> get (toString model.seed) awaitingTables)
+
+
 
 
 -- UPDATE
@@ -111,7 +129,7 @@ type Msg
     | UpdateTables (RestResult ( Time, Result Game AwaitingTable ))
     | CheckUpdate Time
     -- play a game messages
-    | PlayAGameGetSession (RestResult (Session, Session, Session, Session))
+    | PlayAGameGetSession (RestResult ((Session, Session, Session, Session), (AwaitingTable, AwaitingTable, AwaitingTable, AwaitingTable)))
     | PlayAGameOpenTable
 
 
@@ -123,7 +141,7 @@ update ctx action model =
                 playAGame = model.playAGame
             in
                 case result of
-                    Ok (s1, s2, s3, s4) ->
+                    Ok ((s1, s2, s3, s4), (t1, t2, t3, t4)) ->
                         { model 
                         | playAGame = { playAGame | sessions = Array.fromList [ s1, s2, s3, s4 ] }
                         } ! [ awaitingTables
@@ -138,7 +156,10 @@ update ctx action model =
             model ! []
 
         BaseRandom int ->
-            { model | seed = int } ! []
+            let
+                newModel = { model | seed = int } 
+            in
+                newModel ! [ initPlayAGame newModel |> Cmd.map ctx.mapMsg ]
 
         UpdateTables result ->
             case result of
