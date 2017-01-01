@@ -61,7 +61,7 @@ model =
             |> encodeGame
             |> decodeString gameDecoder
         )
-        (AwaitingTable "AwaitingTable" [ AwaitingTableUser "player one" 0 ]
+        (AwaitingTable "AwaitingTable" [ AwaitingTableUser "player one" 0 False ]
             |> encodeAwaitingTable
             |> decodeString awaitingTableDecoder
         )
@@ -95,11 +95,11 @@ initPlayAGame model =
         joinTable session =
             awaitingTables
             |> withHeader "X-Test-Session" session.token
-            |> get ("playAGame" ++ toString model.seed ++ "/join")
+            |> postCommand ("playAGame" ++ toString model.seed ++ "/join")
         startTable session =
             awaitingTables
             |> withHeader "X-Test-Session" session.token
-            |> get ("playAGame" ++ toString model.seed ++ "/start")
+            |> postCommand ("playAGame" ++ toString model.seed ++ "/start")
 
     in
         -- ad. 1
@@ -144,10 +144,10 @@ type Msg
     -- play a game messages
     | PlayAGameGetSession (RestResult 
             ( Quad Session
-            , Quad AwaitingTable
+            , Quad String
             )
         )
-    | PlayAGameOpenTable
+    | PlayAGameOpenTable (RestResult AwaitingTable)
 
 
 update : ComponentUpdate Model msg Msg
@@ -163,14 +163,17 @@ update ctx action model =
                         | playAGame = { playAGame | sessions = Array.fromList [ s1, s2, s3, s4 ] }
                         } ! [ awaitingTables
                               |> withHeader "X-Test-Session" s1.token
-                              |> postCommand ("playAGame " ++ toString model.seed)
-                              |> Task.attempt (\r -> ctx.mapMsg <| PlayAGameOpenTable) ]
+                              |> get ("playAGame" ++ toString model.seed)
+                              |> Task.attempt (\r -> ctx.mapMsg <| PlayAGameOpenTable r) ]
                     Err _ ->
                         { model | seed = model.seed } ! []
 
 
-        PlayAGameOpenTable ->
-            model ! []
+        PlayAGameOpenTable table ->
+            let 
+                x = Debug.log "PlayAGameTable" table
+            in
+                model ! []
 
         BaseRandom int ->
             let
