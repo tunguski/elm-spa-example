@@ -153,16 +153,14 @@ view ctx model =
                 , tbody []
                     (case model.openTables of
                         Just tables ->
-                            tables
-                                |> List.map
-                                    (\table ->
-                                        tr []
-                                            [ td [] [ a [ href ("#/Table/" ++ table.name) ] [ text table.name ] ]
-                                            , td [] [ text (toString (List.length table.users) ++ "/4") ]
-                                            , td []
-                                                (List.map (Tuple.first >> text) table.users)
-                                            ]
-                                    )
+                            tables|> List.map (\table ->
+                                tr []
+                                    [ td [] [ a [ href ("#/Table/" ++ table.name) ] [ text table.name ] ]
+                                    , td [] [ text (toString (List.length table.users) ++ "/4") ]
+                                    , td []
+                                        (List.map (.name >> text) table.users)
+                                    ]
+                            )
 
                         Nothing ->
                             []

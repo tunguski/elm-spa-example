@@ -61,7 +61,7 @@ model =
             |> encodeGame
             |> decodeString gameDecoder
         )
-        (AwaitingTable "AwaitingTable" [ ( "player one", 0 ) ]
+        (AwaitingTable "AwaitingTable" [ AwaitingTableUser "player one" 0 ]
             |> encodeAwaitingTable
             |> decodeString awaitingTableDecoder
         )
@@ -95,9 +95,14 @@ initPlayAGame model =
         joinTable session =
             awaitingTables
             |> withHeader "X-Test-Session" session.token
-            |> get ("playAGame" ++ toString model.seed)
+            |> get ("playAGame" ++ toString model.seed ++ "/join")
+        startTable session =
+            awaitingTables
+            |> withHeader "X-Test-Session" session.token
+            |> get ("playAGame" ++ toString model.seed ++ "/start")
 
     in
+        -- ad. 1
         Task.map4 (,,,)
             getGuestToken
             getGuestToken
@@ -105,16 +110,25 @@ initPlayAGame model =
             getGuestToken
         |> Task.andThen (\(s1, s2, s3, s4) ->
             Task.map5 (,,,,)
+                -- ad. 2
                 (awaitingTables
-                |> withHeader "X-Test-Session" s1.token
-                |> postCommand ("playAGame" ++ toString model.seed))
+                 |> withHeader "X-Test-Session" s1.token
+                 |> postCommand ("playAGame" ++ toString model.seed))
+                -- ad. 3
                 (joinTable s1)
                 (joinTable s2)
                 (joinTable s3)
                 (joinTable s4)
                 |> Task.andThen (\(cmd, t1, t2, t3, t4) ->
-                    -- todo: step 4th
-                    Task.succeed ((s1, s2, s3, s4), (t1, t2, t3, t4))
+                    -- ad. 4
+                    Task.map4 (,,,)
+                        (startTable s1)
+                        (startTable s2)
+                        (startTable s3)
+                        (startTable s4)
+                    |> Task.andThen (\(st1, st2, st3, st4) ->
+                        Task.succeed ((s1, s2, s3, s4), (t1, t2, t3, t4))
+                    )
                 )
         )
         |> Task.attempt PlayAGameGetSession
@@ -205,22 +219,31 @@ update ctx action model =
 
 
 maybeTestHeader name passed =
-    h4 []
-        [ text
-            (case passed of
+    let
+        color = 
+            case passed of
                 Just p ->
-                    ((if p then
-                        "[SUCC] "
-                      else
-                        "[FAIL] "
-                     )
-                        ++ name
-                    )
-
+                    if p then "green" else "red"
                 Nothing ->
-                    ("[....] " ++ name)
-            )
-        ]
+                    "grey"
+    in
+        h4 []
+            [ span [ style [("color", color)] ] [ 
+                text
+                (case passed of
+                    Just p ->
+                        (if p then
+                            "[SUCC] "
+                          else
+                            "[FAIL] "
+                         )
+    
+                    Nothing ->
+                        "[....] "
+                )
+                ]
+            , text name 
+            ]
 
 
 maybeResultSuccess result =
@@ -228,16 +251,7 @@ maybeResultSuccess result =
 
 
 testHeader name passed =
-    h4 []
-        [ text
-            ((if passed then
-                "[SUCC] "
-              else
-                "[FAIL] "
-             )
-                ++ name
-            )
-        ]
+    maybeTestHeader name (Just passed)
 
 
 resultSuccess result =
