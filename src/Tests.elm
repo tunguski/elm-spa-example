@@ -61,7 +61,7 @@ model =
             |> encodeGame
             |> decodeString gameDecoder
         )
-        (AwaitingTable "AwaitingTable" [ AwaitingTableUser "player one" 0 False ]
+        (AwaitingTable "AwaitingTable" [ AwaitingTableUser "player one" 0 False ] True
             |> encodeAwaitingTable
             |> decodeString awaitingTableDecoder
         )
