@@ -57,7 +57,7 @@ model =
         Nothing
         Nothing
         Nothing
-        (initialGame "TestGame"
+        (initGame "TestGame" 0 []
             |> encodeGame
             |> decodeString gameDecoder
         )
@@ -65,7 +65,7 @@ model =
             |> encodeAwaitingTable
             |> decodeString awaitingTableDecoder
         )
-        (GameState Array.empty [] Nothing (initialGame "test"))
+        (GameState Array.empty [] Nothing (initGame "test" 0 []))
 
 
 init : Context msg Msg -> Cmd msg
@@ -87,6 +87,9 @@ initPlayAGame model =
         awaitingTablesWithSession s =
             awaitingTables
             |> withHeader "X-Test-Session" s.token
+        gamesWithSession s =
+            games
+            |> withHeader "X-Test-Session" s.token
         tableName = "playAGame" ++ toString model.seed
         getGuestToken =
             sessions
@@ -102,7 +105,9 @@ initPlayAGame model =
         startTable session =
             awaitingTablesWithSession session
             |> postCommand (tableName ++ "/start")
-
+        getTable session =
+            gamesWithSession session
+            |> get tableName
     in
         -- ad. 1
         Task.map4 (,,,)
@@ -129,7 +134,15 @@ initPlayAGame model =
                         (startTable s3)
                         (startTable s4)
                     |> Task.andThen (\(st1, st2, st3, st4) ->
-                        Task.succeed ((s1, s2, s3, s4), (t1, t2, t3, t4))
+                        -- ad. 4
+                        Task.map4 (,,,)
+                            (getTable s1)
+                            (getTable s2)
+                            (getTable s3)
+                            (getTable s4)
+                        |> Task.andThen (\(g1, g2, g3, g4) ->
+                            Task.succeed ((s1, s2, s3, s4), (t1, t2, t3, t4))
+                        )
                     )
                 )
         )
