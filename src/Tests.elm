@@ -100,17 +100,19 @@ update ctx action model =
             let
                 (playAGame, cmd) =
                     PlayAGame.update
-                        (Context <| mapPlayAGame ctx)
+                        model.seed
                         m
                         model.playAGame
             in
-                ({ model | playAGame = playAGame }, cmd)
+                ( { model | playAGame = playAGame }
+                , Cmd.map (mapPlayAGame ctx) cmd
+                )
 
         BaseRandom int ->
             let
                 newModel = { model | seed = int }
             in
-                newModel ! [ PlayAGame.initPlayAGame newModel |> Cmd.map (mapPlayAGame ctx) ]
+                newModel ! [ PlayAGame.initPlayAGame int newModel |> Cmd.map (mapPlayAGame ctx) ]
 
         UpdateTables result ->
             case result of

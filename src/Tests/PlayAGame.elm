@@ -1,29 +1,27 @@
 module Tests.PlayAGame exposing (..)
 
 import Array exposing (Array)
-import Html exposing (..)
-import Html.Attributes exposing (..)
-import Html.Events exposing (onInput, onClick)
-import Navigation
-import Json.Decode as Json exposing (decodeString)
-import Result exposing (toMaybe)
-import Random
-import Task exposing (..)
-import Time exposing (Time, every, second, now)
+import Task
 
 
 import ClientApi exposing (..)
 import Config exposing (..)
-import Component exposing (..)
-import BaseModel exposing (..)
 import Rest exposing (..)
 import SessionModel exposing (..)
 import TichuModel exposing (..)
-import TichuModelJson exposing (..)
-import TableView exposing (..)
 
 
 type alias Quad item = (item, item, item, item)
+
+
+awaitingTablesWithSession s =
+    awaitingTables
+    |> withHeader "X-Test-Session" s.token
+
+
+gamesWithSession s =
+    games
+    |> withHeader "X-Test-Session" s.token
 
 
 -- 1. create four guest players; remember their tokens
@@ -31,15 +29,9 @@ type alias Quad item = (item, item, item, item)
 -- 3. join by the rest
 -- 4. all press start
 -- 5. play the game (how?)
-initPlayAGame model =
+initPlayAGame seed model =
     let
-        awaitingTablesWithSession s =
-            awaitingTables
-            |> withHeader "X-Test-Session" s.token
-        gamesWithSession s =
-            games
-            |> withHeader "X-Test-Session" s.token
-        tableName = "playAGame" ++ toString model.seed
+        tableName = "playAGame" ++ toString seed
         getGuestToken =
             sessions
             |> withQueryParams
@@ -75,35 +67,50 @@ initPlayAGame model =
                 (joinTable s2)
                 (joinTable s3)
                 (joinTable s4)
-                |> Task.andThen (\(cmd, t1, t2, t3, t4) ->
+                |> Task.andThen (\_ ->
                     -- ad. 4
                     Task.map4 (,,,)
                         (startTable s1)
                         (startTable s2)
                         (startTable s3)
                         (startTable s4)
-                    |> Task.andThen (\(st1, st2, st3, st4) ->
+                    |> Task.andThen (\_ ->
                         -- ad. 5
                         Task.map4 (,,,)
                             (getTable s1)
                             (getTable s2)
                             (getTable s3)
                             (getTable s4)
-                        |> Task.andThen (\_ ->
-                            -- ad. 5
-                            Task.map4 (,,,)
-                                (getTable s1)
-                                (getTable s2)
-                                (getTable s3)
-                                (getTable s4)
-                            |> Task.andThen (\_ ->
-                                Task.succeed ((s1, s2, s3, s4), (t1, t2, t3, t4))
-                            )
+                        |> Task.andThen (\(t1, t2, t3, t4) ->
+                            Task.succeed ((s1, s2, s3, s4), (t1, t2, t3, t4))
                         )
                     )
                 )
         )
         |> Task.attempt PlayAGameGetSession
+
+
+type PlayerRequest
+    = Pass Session
+    | Play Session (List Card)
+
+
+playRound seed id requests =
+    let
+        tableName = "playAGame" ++ toString seed
+    in
+        List.map (\r ->
+            case r of
+                Pass session ->
+                    gamesWithSession session
+                    |> postCommand (tableName ++ "/pass")
+
+                Play session list ->
+                    gamesWithSession session
+                    |> postCommand (tableName ++ "/pass")
+        ) requests
+        |> Task.sequence
+        |> Task.attempt (PlayRound id)
 
 
 -- UPDATE
@@ -113,26 +120,32 @@ type Msg
     -- play a game messages
     = PlayAGameGetSession (RestResult
             ( Quad Session
-            , Quad String
+            , Quad Game
             )
         )
-    | PlayAGameOpenTable (RestResult Game)
+    | PlayRound String (RestResult (List String))
 
 
-update ctx action model =
+update seed action model =
     case action of
         PlayAGameGetSession result ->
            case Debug.log "PlayAGameStart!" result of
                Ok ((s1, s2, s3, s4), (t1, t2, t3, t4)) ->
-                   { model | sessions = Array.fromList [ s1, s2, s3, s4 ] } ! []
+                   { model | sessions = Array.fromList [ s1, s2, s3, s4 ] }
+                   ! [ firstRound seed s1 s2 s3 s4 ]
                Err _ ->
                    model ! []
 
-
-        PlayAGameOpenTable table ->
+        PlayRound id result ->
             let
-                x = Debug.log "game" table
+                x = Debug.log "game" result
             in
                 model ! []
+
+
+firstRound seed s1 s2 s3 s4 =
+    playRound seed "round1"
+        [ Play s1 [ MahJong ]
+        ]
 
 
