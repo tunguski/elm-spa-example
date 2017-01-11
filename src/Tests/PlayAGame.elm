@@ -1,7 +1,8 @@
 module Tests.PlayAGame exposing (..)
 
 import Array exposing (Array)
-import Task
+import Http exposing (Error)
+import Task exposing (Task)
 
 
 import ClientApi exposing (..)
@@ -12,6 +13,10 @@ import TichuModel exposing (..)
 
 
 type alias Quad item = (item, item, item, item)
+
+
+getTableName seed =
+    "playAGame" ++ toString seed
 
 
 awaitingTablesWithSession s =
@@ -31,7 +36,7 @@ gamesWithSession s =
 -- 5. play the game (how?)
 initPlayAGame seed model =
     let
-        tableName = "playAGame" ++ toString seed
+        tableName = getTableName seed
         getGuestToken =
             sessions
             |> withQueryParams
@@ -57,60 +62,24 @@ initPlayAGame seed model =
             getGuestToken
             getGuestToken
         |> Task.andThen (\(s1, s2, s3, s4) ->
-            Task.map5 (,,,,)
-                -- ad. 2
-                (awaitingTablesWithSession s1
-                 |> withHeader "X-Test-Game-Seed" "0"
-                 |> postCommand tableName)
+            -- ad. 2
+            (awaitingTablesWithSession s1
+             |> withHeader "X-Test-Game-Seed" "0"
+             |> postCommand tableName)
+            |> andThenReturn
                 -- ad. 3
-                (joinTable s1)
-                (joinTable s2)
-                (joinTable s3)
-                (joinTable s4)
-                |> Task.andThen (\_ ->
-                    -- ad. 4
-                    Task.map4 (,,,)
-                        (startTable s1)
-                        (startTable s2)
-                        (startTable s3)
-                        (startTable s4)
-                    |> Task.andThen (\_ ->
-                        -- ad. 5
-                        Task.map4 (,,,)
-                            (getTable s1)
-                            (getTable s2)
-                            (getTable s3)
-                            (getTable s4)
-                        |> Task.andThen (\(t1, t2, t3, t4) ->
-                            Task.succeed ((s1, s2, s3, s4), (t1, t2, t3, t4))
-                        )
-                    )
-                )
+                (execForAll joinTable s1 s2 s3 s4)
+            |> andThenReturn
+                -- ad. 4
+                (execForAll startTable s1 s2 s3 s4)
+            |> andThenReturn
+                -- ad. 5
+                (execForAll getTable s1 s2 s3 s4)
+            |> Task.andThen (\games ->
+                Task.succeed ((s1, s2, s3, s4), games)
+            )
         )
         |> Task.attempt PlayAGameGetSession
-
-
-type PlayerRequest
-    = Pass Session
-    | Play Session (List Card)
-
-
-playRound seed id requests =
-    let
-        tableName = "playAGame" ++ toString seed
-    in
-        List.map (\r ->
-            case r of
-                Pass session ->
-                    gamesWithSession session
-                    |> postCommand (tableName ++ "/pass")
-
-                Play session list ->
-                    gamesWithSession session
-                    |> postCommand (tableName ++ "/pass")
-        ) requests
-        |> Task.sequence
-        |> Task.attempt (PlayRound id)
 
 
 -- UPDATE
@@ -143,9 +112,50 @@ update seed action model =
                 model ! []
 
 
+type PlayerRequest
+    = Pass Session
+    | Play Session (List Card)
+
+
+playRound : Int -> List PlayerRequest -> Task Error (List String)
+playRound seed requests =
+    let
+        tableName = getTableName seed
+    in
+        List.map (\r ->
+            case r of
+                Pass session ->
+                    gamesWithSession session
+                    |> postCommand (tableName ++ "/pass")
+
+                Play session list ->
+                    gamesWithSession session
+                    |> postCommand (tableName ++ "/pass")
+        ) requests
+        |> Task.sequence
+
+
+execForAll function s1 s2 s3 s4 =
+    Task.map4 (,,,)
+        (function s1)
+        (function s2)
+        (function s3)
+        (function s4)
+
+
 firstRound seed s1 s2 s3 s4 =
-    playRound seed "round1"
-        [ Play s1 [ MahJong ]
-        ]
+    let
+        tableName = "playAGame" ++ toString seed
+        declareGrandTichu session =
+            gamesWithSession session
+            |> get tableName
+    in
+        execForAll declareGrandTichu s1 s2 s3 s4
+        |> Task.andThen (\_ ->
+            playRound seed
+                [ Play s4 [ MahJong ]
+                ]
+        )
+        |> Task.attempt (PlayRound "round1")
 
 
