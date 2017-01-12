@@ -145,17 +145,24 @@ execForAll function s1 s2 s3 s4 =
 
 firstRound seed s1 s2 s3 s4 =
     let
-        tableName = "playAGame" ++ toString seed
-        declareGrandTichu session =
-            gamesWithSession session
-            |> get tableName
+        tableName = getTableName seed
+        declareGrandTichu (session, declare) =
+            case declare of
+                True ->
+                    gamesWithSession session
+                    |> postCommand (tableName ++ "/declareGrandTichu")
+                False ->
+                    gamesWithSession session
+                    |> postCommand (tableName ++ "/seeAllCards")
     in
-        execForAll declareGrandTichu s1 s2 s3 s4
-        |> Task.andThen (\_ ->
-            playRound seed
+        execForAll declareGrandTichu (s1, False) (s2, False) (s3, False) (s4, False)
+        |> andThenReturn
+            (gamesWithSession s1
+            |> get tableName)
+        |> andThenReturn
+            (playRound seed
                 [ Play s4 [ MahJong ]
-                ]
-        )
+                ])
         |> Task.attempt (PlayRound "round1")
 
 
