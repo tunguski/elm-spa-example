@@ -1,6 +1,5 @@
 module Tests.PlayAGame exposing (..)
 
-import Array exposing (Array)
 import Http exposing (Error)
 import Task exposing (Task)
 
@@ -91,9 +90,15 @@ quadGet i (q1, q2, q3, q4) =
         4 -> q4
         _ -> Debug.crash "Wrong item"
 
+
 quadMap : (a -> b) -> Quad a -> Quad b
 quadMap mapper (q1, q2, q3, q4) =
     (mapper q1, mapper q2, mapper q3, mapper q4)
+
+
+quadZip : Quad a -> Quad b -> Quad (a, b)
+quadZip (q1, q2, q3, q4) (s1, s2, s3, s4) =
+    ((q1, s1), (q2, s2), (q3, s3), (q4, s4))
 
 
 -- UPDATE
@@ -114,7 +119,7 @@ update seed action model =
         PlayAGameGetSession result ->
            case result of
                Ok ((s1, s2, s3, s4), (t1, t2, t3, t4)) ->
-                   { model | sessions = Array.fromList [ s1, s2, s3, s4 ] }
+                   { model | sessions = [ s1, s2, s3, s4 ] }
                    ! [ firstRound seed s1 s2 s3 s4 ]
                Err _ ->
                    model ! []
@@ -169,11 +174,23 @@ firstRound seed s1 s2 s3 s4 =
                 False ->
                     gamesWithSession session
                     |> postCommand (tableName ++ "/seeAllCards")
+        exchangeCards (cards, session) =
+             gamesWithSession session
+             |> withBody (encodeCards cards)
+             |> postCommand (tableName ++ "/exchangeCards")
     in
         execForAll declareGrandTichu (quadMap (\s -> (s, False)) (s1, s2, s3, s4))
         |> andThenReturn
             (gamesWithSession s1
             |> get tableName)
+        |> andThenReturn
+            (execForAll exchangeCards (quadZip
+                ( [ (NormalCard Spades (R 2)), Phoenix, (NormalCard Spades (R 3)) ]
+                , [ (NormalCard Hearts (R 7)), (NormalCard Clubs A), (NormalCard Clubs (R 8)) ]
+                , [ (NormalCard Hearts (R 3)), (NormalCard Spades A), (NormalCard Diamonds (R 3)) ]
+                , [ (NormalCard Diamonds (R 5)), Dragon, (NormalCard Hearts (R 5)) ]
+                )
+                (s1, s2, s3, s4)))
         |> andThenReturn
             (playRound seed
                 [ Play s4 [ MahJong ]
@@ -181,7 +198,7 @@ firstRound seed s1 s2 s3 s4 =
                 , Pass s2
                 , Pass s3
                 , Pass s4
-                , Play s1 [ NormalCard Hearts (R 5) ]
+                , Play s1 [ NormalCard Clubs (R 5) ]
                 ])
         |> Task.attempt (PlayRound "round1")
 

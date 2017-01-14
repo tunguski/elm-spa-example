@@ -1,6 +1,5 @@
 module Tests exposing (..)
 
-import Array exposing (Array)
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (onInput, onClick)
@@ -45,7 +44,7 @@ type alias Model =
 
 
 type alias GameState =
-    { sessions : Array Session
+    { sessions : List Session
     , playerState : List Game
     , game : Maybe (Result String Game)
     , internal : Game
@@ -66,7 +65,7 @@ model =
             |> encodeAwaitingTable
             |> decodeString awaitingTableDecoder
         )
-        (GameState Array.empty [] Nothing (initGame "test" 0 []))
+        (GameState [] [] Nothing (initGame "test" 0 []))
 
 
 init : Context msg Msg -> Cmd msg
