@@ -10,6 +10,7 @@ import Config exposing (..)
 import Rest exposing (..)
 import SessionModel exposing (..)
 import TichuModel exposing (..)
+import TichuModelJson exposing (encodeCards)
 
 
 type alias Quad item = (item, item, item, item)
@@ -61,25 +62,38 @@ initPlayAGame seed model =
             getGuestToken
             getGuestToken
             getGuestToken
-        |> Task.andThen (\(s1, s2, s3, s4) ->
+        |> Task.andThen (\sessions ->
             -- ad. 2
-            (awaitingTablesWithSession s1
+            (awaitingTablesWithSession (quadGet 1 sessions)
              |> withHeader "X-Test-Game-Seed" "0"
              |> postCommand tableName)
             |> andThenReturn
                 -- ad. 3
-                (execForAll joinTable s1 s2 s3 s4)
+                (execForAll joinTable sessions)
             |> andThenReturn
                 -- ad. 4
-                (execForAll startTable s1 s2 s3 s4)
+                (execForAll startTable sessions)
             |> andThenReturn
                 -- ad. 5
-                (execForAll getTable s1 s2 s3 s4)
+                (execForAll getTable sessions)
             |> Task.andThen (\games ->
-                Task.succeed ((s1, s2, s3, s4), games)
+                Task.succeed (sessions, games)
             )
         )
         |> Task.attempt PlayAGameGetSession
+
+
+quadGet i (q1, q2, q3, q4) =
+    case i of
+        1 -> q1
+        2 -> q2
+        3 -> q3
+        4 -> q4
+        _ -> Debug.crash "Wrong item"
+
+quadMap : (a -> b) -> Quad a -> Quad b
+quadMap mapper (q1, q2, q3, q4) =
+    (mapper q1, mapper q2, mapper q3, mapper q4)
 
 
 -- UPDATE
@@ -98,7 +112,7 @@ type Msg
 update seed action model =
     case action of
         PlayAGameGetSession result ->
-           case Debug.log "PlayAGameStart!" result of
+           case result of
                Ok ((s1, s2, s3, s4), (t1, t2, t3, t4)) ->
                    { model | sessions = Array.fromList [ s1, s2, s3, s4 ] }
                    ! [ firstRound seed s1 s2 s3 s4 ]
@@ -130,12 +144,13 @@ playRound seed requests =
 
                 Play session list ->
                     gamesWithSession session
-                    |> postCommand (tableName ++ "/pass")
+                    |> withBody (encodeCards list)
+                    |> postCommand (tableName ++ "/hand")
         ) requests
         |> Task.sequence
 
 
-execForAll function s1 s2 s3 s4 =
+execForAll function (s1, s2, s3, s4) =
     Task.map4 (,,,)
         (function s1)
         (function s2)
@@ -155,13 +170,18 @@ firstRound seed s1 s2 s3 s4 =
                     gamesWithSession session
                     |> postCommand (tableName ++ "/seeAllCards")
     in
-        execForAll declareGrandTichu (s1, False) (s2, False) (s3, False) (s4, False)
+        execForAll declareGrandTichu (quadMap (\s -> (s, False)) (s1, s2, s3, s4))
         |> andThenReturn
             (gamesWithSession s1
             |> get tableName)
         |> andThenReturn
             (playRound seed
                 [ Play s4 [ MahJong ]
+                , Play s1 [ NormalCard Spades (R 2) ]
+                , Pass s2
+                , Pass s3
+                , Pass s4
+                , Play s1 [ NormalCard Hearts (R 5) ]
                 ])
         |> Task.attempt (PlayRound "round1")
 
