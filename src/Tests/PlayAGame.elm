@@ -1,5 +1,9 @@
 module Tests.PlayAGame exposing (..)
 
+
+import Html exposing (..)
+import Html.Attributes exposing (..)
+import Html.Events exposing (onInput, onClick)
 import Http exposing (Error)
 import Task exposing (Task)
 
@@ -10,6 +14,7 @@ import Rest exposing (..)
 import SessionModel exposing (..)
 import TichuModel exposing (..)
 import TichuModelJson exposing (encodeCards)
+import TestBasics exposing (..)
 
 
 type alias Quad item = (item, item, item, item)
@@ -82,25 +87,6 @@ initPlayAGame seed model =
         |> Task.attempt PlayAGameGetSession
 
 
-quadGet i (q1, q2, q3, q4) =
-    case i of
-        1 -> q1
-        2 -> q2
-        3 -> q3
-        4 -> q4
-        _ -> Debug.crash "Wrong item"
-
-
-quadMap : (a -> b) -> Quad a -> Quad b
-quadMap mapper (q1, q2, q3, q4) =
-    (mapper q1, mapper q2, mapper q3, mapper q4)
-
-
-quadZip : Quad a -> Quad b -> Quad (a, b)
-quadZip (q1, q2, q3, q4) (s1, s2, s3, s4) =
-    ((q1, s1), (q2, s2), (q3, s3), (q4, s4))
-
-
 -- UPDATE
 
 
@@ -125,10 +111,12 @@ update seed action model =
                    model ! []
 
         PlayRound id result ->
-            let
-                x = Debug.log "game" result
-            in
-                model ! []
+        --    model ! []
+            case result of
+                Ok _ ->
+                    { model | result = Just <| Ok "finished" } ! []
+                Err error ->
+                    { model | result = Just <| Err <| toString error } ! []
 
 
 type PlayerRequest
@@ -194,12 +182,24 @@ firstRound seed s1 s2 s3 s4 =
         |> andThenReturn
             (playRound seed
                 [ Play s4 [ MahJong ]
-                , Play s1 [ NormalCard Spades (R 2) ]
+                , Play s1 [ NormalCard Hearts (R 3) ]
                 , Pass s2
-                , Pass s3
+                , Play s3 [ NormalCard Hearts (R 6) ]
                 , Pass s4
-                , Play s1 [ NormalCard Clubs (R 5) ]
+                , Play s1 [ NormalCard Diamonds (R 7) ]
+                , Play s2 [ NormalCard Diamonds (R 10) ]
+                , Play s3 [ NormalCard Spades Q ]
+                , Play s4 [ NormalCard Hearts A ]
+                , Pass s1
+                , Pass s2
+                , Play s3 [ NormalCard Clubs (R 4), NormalCard Hearts (R 4) ]
                 ])
         |> Task.attempt (PlayRound "round1")
+
+
+view ctx model =
+    [ maybeTestHeader "Play a game" (maybeResultSuccess model.result)
+    , displayResult model.result
+    ]
 
 

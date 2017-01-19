@@ -21,6 +21,7 @@ import TichuModel exposing (..)
 import TichuModelJson exposing (..)
 import TableView exposing (..)
 import Tests.PlayAGame as PlayAGame
+import TestBasics exposing (..)
 
 
 component : Component Model msg Msg
@@ -43,14 +44,6 @@ type alias Model =
     }
 
 
-type alias GameState =
-    { sessions : List Session
-    , playerState : List Game
-    , game : Maybe (Result String Game)
-    , internal : Game
-    }
-
-
 model : Model
 model =
     Model 0
@@ -65,16 +58,13 @@ model =
             |> encodeAwaitingTable
             |> decodeString awaitingTableDecoder
         )
-        (GameState [] [] Nothing (initGame "test" 0 []))
+        (GameState [] [] Nothing)
 
 
 init : Context msg Msg -> Cmd msg
 init ctx =
   Random.generate BaseRandom (Random.int 0 Random.maxInt)
     |> Cmd.map ctx.mapMsg
-
-
-type alias Quad item = (item, item, item, item)
 
 
 -- UPDATE
@@ -153,72 +143,16 @@ update ctx action model =
 -- VIEW
 
 
-maybeTestHeader name passed =
-    let
-        color =
-            case passed of
-                Just p ->
-                    if p then "green" else "red"
-                Nothing ->
-                    "grey"
-    in
-        h4 []
-            [ span [ style [("color", color)] ] [
-                text
-                (case passed of
-                    Just p ->
-                        (if p then
-                            "[SUCC] "
-                          else
-                            "[FAIL] "
-                         )
-
-                    Nothing ->
-                        "[....] "
-                )
-                ]
-            , text name
-            ]
-
-
-maybeResultSuccess result =
-    Maybe.map resultSuccess result
-
-
-testHeader name passed =
-    maybeTestHeader name (Just passed)
-
-
-resultSuccess result =
-    case result of
-        Ok _ ->
-            True
-
-        Err _ ->
-            False
-
-
-displayResult element =
-    div []
-        [ case element of
-            Just game ->
-                text <| toString element
-
-            Nothing ->
-                i [ (class "fa fa-spinner fa-spin fa-fw") ] []
-        ]
-
-
 view : ComponentView Model msg Msg
 view ctx model =
     Page ("Tests [seed: " ++ (toString model.seed) ++ "]") <|
-        fullRow
+        fullRow (
             [ testHeader "serialize/deserialize Game" (resultSuccess model.deserializedGame)
             , div [] [ text <| toString model.deserializedGame ]
             , testHeader "serialize/deserialize AwaitingTable" (resultSuccess model.deserializedAwaitingTable)
             , div [] [ text <| toString model.deserializedAwaitingTable ]
-            , maybeTestHeader "Play a game" (maybeResultSuccess model.playAGame.game)
-            , displayResult model.playAGame.game
             ]
+            ++ (PlayAGame.view (mapPlayAGame ctx) model.playAGame)
+            )
 
 
