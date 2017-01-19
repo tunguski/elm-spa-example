@@ -46,7 +46,7 @@ model name =
 
 getTable : String -> (RestResult Game -> msg) -> Cmd msg
 getTable tableId msg =
-    get tableId games 
+    get tableId games
     |> Task.attempt msg
 
 
@@ -128,22 +128,31 @@ update ctx action model =
 view : ComponentView Model msg Msg
 view ctx model =
     Page "Table" <|
-        multiCellRow
-            [ ( 2
-              , [ div [ class "table-chat" ]
-                    [ div [ class "chat-header" ] [ text "Chat" ]
-                    , div [] [ text "fsdds" ]
-                    , div [] [ text "asdf" ]
-                    ]
+        case model.game of
+            Just game ->
+                gameView ctx game
+            Nothing ->
+                div [] []
+
+
+gameView : Context msg cMsg -> Game -> Html msg
+gameView ctx model =
+    multiCellRow
+        [ ( 2
+          , [ div [ class "table-chat" ]
+                [ div [ class "chat-header" ] [ text "Chat" ]
+                , div [] [ text "fsdds" ]
+                , div [] [ text "asdf" ]
                 ]
-              )
-            , ( 8, [ div [ class "table-main" ] [ text "main" ] ] )
-            , ( 2
-              , [ div [ class "table-options" ]
-                    [ div [ class "table-options-header" ] [ text "Game" ]
-                    ]
-                ]
-              )
             ]
+          )
+        , ( 8, [ div [ class "table-main" ] [ text "main" ] ] )
+        , ( 2
+          , [ div [ class "table-options" ]
+                [ div [ class "table-options-header" ] [ text "Game" ]
+                ]
+            ]
+          )
+        ]
 
 

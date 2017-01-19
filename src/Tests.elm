@@ -152,7 +152,7 @@ view ctx model =
             , testHeader "serialize/deserialize AwaitingTable" (resultSuccess model.deserializedAwaitingTable)
             , div [] [ text <| toString model.deserializedAwaitingTable ]
             ]
-            ++ (PlayAGame.view (mapPlayAGame ctx) model.playAGame)
+            ++ (PlayAGame.view (Context <| mapPlayAGame ctx) model.playAGame)
             )
 
 

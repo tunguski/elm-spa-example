@@ -15,6 +15,7 @@ import SessionModel exposing (..)
 import TichuModel exposing (..)
 import TichuModelJson exposing (encodeCards)
 import TestBasics exposing (..)
+import TableView exposing (gameView)
 
 
 type alias Quad item = (item, item, item, item)
@@ -105,10 +106,13 @@ update seed action model =
         PlayAGameGetSession result ->
            case result of
                Ok ((s1, s2, s3, s4), (t1, t2, t3, t4)) ->
-                   { model | sessions = [ s1, s2, s3, s4 ] }
+                   { model
+                   | sessions = [ s1, s2, s3, s4 ]
+                   , playerState = [ t1, t2, t3, t4 ]
+                   }
                    ! [ firstRound seed s1 s2 s3 s4 ]
-               Err _ ->
-                   model ! []
+               Err error ->
+                    { model | result = Just <| Err <| toString error } ! []
 
         PlayRound id result ->
         --    model ! []
@@ -199,6 +203,11 @@ firstRound seed s1 s2 s3 s4 =
 
 view ctx model =
     [ maybeTestHeader "Play a game" (maybeResultSuccess model.result)
+    , div []
+      (List.map (\table ->
+          div [ class "col-md-3" ]
+            [ gameView ctx table ]
+        ) model.playerState)
     , displayResult model.result
     ]
 
