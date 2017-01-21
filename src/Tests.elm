@@ -58,7 +58,7 @@ model =
             |> encodeAwaitingTable
             |> decodeString awaitingTableDecoder
         )
-        (GameState [] [] Nothing)
+        (GameState Nothing [] Nothing)
 
 
 init : Context msg Msg -> Cmd msg

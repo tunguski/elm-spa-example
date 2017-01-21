@@ -11,7 +11,7 @@ import TichuModel exposing (..)
 
 
 type alias GameState =
-    { sessions : List Session
+    { sessions : Maybe (Quad Session)
     , playerState : List Game
     , result : Maybe (Result String String)
     }

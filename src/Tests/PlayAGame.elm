@@ -4,7 +4,7 @@ module Tests.PlayAGame exposing (..)
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (onInput, onClick)
-import Http exposing (Error)
+import Http exposing (Error(..))
 import Task exposing (Task)
 
 
@@ -89,6 +89,15 @@ initPlayAGame seed model =
         |> Task.attempt PlayAGameGetSession
 
 
+getActualStates tableName sessions =
+    let
+        getTable session =
+            gamesWithSession session
+            |> get tableName
+    in
+        (execForAll getTable sessions)
+        |> Task.attempt TableStates
+
 -- UPDATE
 
 
@@ -101,31 +110,54 @@ type Msg
         )
     | PlayRound String (RestResult (List String))
     | Unused
+    | TableStates (RestResult (Quad Game))
+
+
+errorResultToModel seed model error =
+    { model | result =
+        Just <| Err <|
+            case error of
+                BadStatus response ->
+                    toString (response.status.code, response.body)
+                _ ->
+                    toString error
+    }
+    ! case model.sessions of
+            Just sessions ->
+                [ getActualStates (getTableName seed) sessions ]
+            Nothing ->
+                []
 
 
 update seed action model =
     case action of
         PlayAGameGetSession result ->
            case result of
-               Ok ((s1, s2, s3, s4), (t1, t2, t3, t4)) ->
+               Ok (sessions, (t1, t2, t3, t4)) ->
                    { model
-                   | sessions = [ s1, s2, s3, s4 ]
+                   | sessions = Just sessions
                    , playerState = [ t1, t2, t3, t4 ]
                    }
-                   ! [ firstRound seed s1 s2 s3 s4 ]
+                   ! [ firstRound seed sessions ]
                Err error ->
-                    { model | result = Just <| Err <| toString error } ! []
+                    errorResultToModel seed model error
 
         PlayRound id result ->
-        --    model ! []
             case result of
                 Ok _ ->
                     { model | result = Just <| Ok "finished" } ! []
                 Err error ->
-                    { model | result = Just <| Err <| toString error } ! []
+                    errorResultToModel seed model error
 
         Unused ->
             model ! []
+
+        TableStates result ->
+            case result of
+                Ok (g1, g2, g3, g4) ->
+                    { model | playerState = [ g1, g2, g3, g4 ] } ! []
+                _ ->
+                    model ! []
 
 
 type PlayerRequest
@@ -160,7 +192,7 @@ execForAll function (s1, s2, s3, s4) =
         (function s4)
 
 
-firstRound seed s1 s2 s3 s4 =
+firstRound seed (s1, s2, s3, s4) =
     let
         tableName = getTableName seed
         declareGrandTichu (session, declare) =
@@ -210,12 +242,12 @@ view ctx model =
     [ maybeTestHeader "Play a game" (maybeResultSuccess model.result)
     , div []
       ((List.map (\table ->
-          div [ class "col-md-3" ]
+          div [ class "col-md-6" ]
             [ gameView ctx table ]
         ) model.playerState)
       ++
       (List.map (\table ->
-          div [ class "col-md-3" ]
+          div [ class "col-md-6" ]
             [ Html.map (always <| ctx.mapMsg Unused) (oldTichuView table) ]
         ) model.playerState
         ))

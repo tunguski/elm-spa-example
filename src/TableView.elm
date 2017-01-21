@@ -188,8 +188,7 @@ oldTichuView game =
         [ node "style" [] [ text (cssStyle game) ]
         , div [ class "container" ]
             (List.map printRow
-                [ [ h1 [] [ text "Test" ] ]
-                , [ showRound game.round ]
+                [ [ showRound game.round ]
                 , [ button
                         [ class "btn btn-sm btn-primary"
                         , onClick PlaceCombination
@@ -252,7 +251,7 @@ printCardSkeleton card =
 
 printTableHand : List Card -> List (Html Msg)
 printTableHand cards =
-    List.map (printCard []) cards
+    printCards cards []
 
 
 showRound : Round -> Html Msg
@@ -260,20 +259,13 @@ showRound round =
     let
         table =
             List.map (\s -> div [] s)
-                (List.map (printTableHand) round.table)
+                (List.map printTableHand round.table)
 
         players =
             List.map (showPlayer round.actualPlayer)
                 (List.indexedMap (,) round.players)
     in
-        div []
-            ([ h2 [] [ text ("Round") ]
-             , h3 [] [ text ("Table") ]
-             ]
-                ++ table
-                ++ [ h3 [] [ text ("Players") ] ]
-                ++ players
-            )
+        div [] (table ++ players)
 
 
 showPlayer : Int -> ( Int, Player ) -> Html Msg
@@ -289,7 +281,7 @@ showPlayer actualPlayer ( index, player ) =
                        )
                 )
             ]
-            [ text player.name ]
+            [ text (player.name ++ " " ++ toString player.cardsOnHand) ]
         )
             :: printCards player.hand player.selection
 
@@ -339,3 +331,5 @@ cssStyle game =
   color: blue;
 }
 """
+
+
