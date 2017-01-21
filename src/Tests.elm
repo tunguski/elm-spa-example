@@ -21,6 +21,7 @@ import TichuModel exposing (..)
 import TichuModelJson exposing (..)
 import TableView exposing (..)
 import Tests.PlayAGame as PlayAGame
+import Tests.Combinations as CardCombinations
 import TestBasics exposing (..)
 
 
@@ -152,6 +153,7 @@ view ctx model =
             , testHeader "serialize/deserialize AwaitingTable" (resultSuccess model.deserializedAwaitingTable)
             , div [] [ text <| toString model.deserializedAwaitingTable ]
             ]
+            ++ CardCombinations.testCombinations
             ++ (PlayAGame.view (Context <| mapPlayAGame ctx) model.playAGame)
             )
 
