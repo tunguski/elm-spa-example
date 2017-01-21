@@ -181,8 +181,8 @@ gameView ctx model =
         ]
 
 
-oldTichuView : Context msg cMsg -> Game -> Html msg
-oldTichuView ctx game =
+oldTichuView : Game -> Html Msg
+oldTichuView game =
     div []
         --[ node "link" [ rel "stylesheet", href "https://bootswatch.com/darkly/bootstrap.css" ] []
         [ node "style" [] [ text (cssStyle game) ]

@@ -10,6 +10,7 @@ import Task exposing (Task)
 
 import ClientApi exposing (..)
 import Config exposing (..)
+import Component exposing (..)
 import Rest exposing (..)
 import SessionModel exposing (..)
 import TichuModel exposing (..)
@@ -99,6 +100,7 @@ type Msg
             )
         )
     | PlayRound String (RestResult (List String))
+    | Unused
 
 
 update seed action model =
@@ -121,6 +123,9 @@ update seed action model =
                     { model | result = Just <| Ok "finished" } ! []
                 Err error ->
                     { model | result = Just <| Err <| toString error } ! []
+
+        Unused ->
+            model ! []
 
 
 type PlayerRequest
@@ -211,7 +216,7 @@ view ctx model =
       ++
       (List.map (\table ->
           div [ class "col-md-3" ]
-            [ oldTichuView table ]
+            [ Html.map (always <| ctx.mapMsg Unused) (oldTichuView table) ]
         ) model.playerState
         ))
     , displayResult model.result
