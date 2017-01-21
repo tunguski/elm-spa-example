@@ -34,6 +34,10 @@ quadMap mapper (q1, q2, q3, q4) =
     (mapper q1, mapper q2, mapper q3, mapper q4)
 
 
+toList (q1, q2, q3, q4) =
+    [ q1, q2, q3, q4 ]
+
+
 quadZip : Quad a -> Quad b -> Quad (a, b)
 quadZip (q1, q2, q3, q4) (s1, s2, s3, s4) =
     ((q1, s1), (q2, s2), (q3, s3), (q4, s4))

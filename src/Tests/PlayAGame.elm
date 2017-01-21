@@ -96,7 +96,6 @@ getActualStates tableName sessions =
             |> get tableName
     in
         (execForAll getTable sessions)
-        |> Task.attempt TableStates
 
 -- UPDATE
 
@@ -108,7 +107,7 @@ type Msg
             , Quad Game
             )
         )
-    | PlayRound String (RestResult (List String))
+    | PlayRound String (RestResult (Quad Game))
     | Unused
     | TableStates (RestResult (Quad Game))
 
@@ -124,7 +123,9 @@ errorResultToModel seed model error =
     }
     ! case model.sessions of
             Just sessions ->
-                [ getActualStates (getTableName seed) sessions ]
+                [ getActualStates (getTableName seed) sessions
+                    |> Task.attempt TableStates
+                ]
             Nothing ->
                 []
 
@@ -133,10 +134,10 @@ update seed action model =
     case action of
         PlayAGameGetSession result ->
            case result of
-               Ok (sessions, (t1, t2, t3, t4)) ->
+               Ok (sessions, games) ->
                    { model
                    | sessions = Just sessions
-                   , playerState = [ t1, t2, t3, t4 ]
+                   , playerState = toList games
                    }
                    ! [ firstRound seed sessions ]
                Err error ->
@@ -144,8 +145,11 @@ update seed action model =
 
         PlayRound id result ->
             case result of
-                Ok _ ->
-                    { model | result = Just <| Ok "finished" } ! []
+                Ok games ->
+                    { model
+                    | result = Just <| Ok "finished"
+                    , playerState = toList games
+                    } ! []
                 Err error ->
                     errorResultToModel seed model error
 
@@ -210,8 +214,7 @@ firstRound seed (s1, s2, s3, s4) =
     in
         execForAll declareGrandTichu (quadMap (\s -> (s, False)) (s1, s2, s3, s4))
         |> andThenReturn
-            (gamesWithSession s1
-            |> get tableName)
+            (gamesWithSession s1 |> get tableName)
         |> andThenReturn
             (execForAll exchangeCards (quadZip
                 ( [ (NormalCard Spades (R 2)), Phoenix, (NormalCard Spades (R 3)) ]
@@ -233,8 +236,23 @@ firstRound seed (s1, s2, s3, s4) =
                 , Play s4 [ NormalCard Hearts A ]
                 , Pass s1
                 , Pass s2
-                , Play s3 [ NormalCard Clubs (R 4), NormalCard Hearts (R 4) ]
+                , Pass s3
+                , Play s4 [ NormalCard Diamonds (R 3) ]
+                , Play s1 [ NormalCard Spades (R 6) ]
+                , Pass s2
+                , Play s3 [ NormalCard Clubs (R 7) ]
+                , Play s4 [ NormalCard Spades (R 8) ]
+                , Play s1 [ NormalCard Clubs (R 9) ]
+                , Pass s2
+                , Pass s3
+                , Play s4 [ NormalCard Hearts (R 10) ]
+                , Play s1 [ NormalCard Hearts Q ]
+                , Pass s2
+                , Pass s3
+                , Pass s4
                 ])
+        |> andThenReturn
+            (getActualStates tableName (s1, s2, s3, s4))
         |> Task.attempt (PlayRound "round1")
 
 
