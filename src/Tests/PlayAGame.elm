@@ -280,6 +280,22 @@ firstRound seed (s1, s2, s3, s4) =
                 , Pass s3
                 , Play s1 [ Dog ]
                 , Play s3 [ NormalCard Clubs (R 3) ]
+                , Play s1 [ NormalCard Clubs A ]
+                , Pass s2
+                , Pass s3
+                , Play s1 [ NormalCard Diamonds (R 8), NormalCard Hearts (R 8) ]
+                , Play s2 [ NormalCard Diamonds (R 9), NormalCard Spades (R 9) ]
+                , Pass s3
+                , Play s2 [ NormalCard Clubs (R 10), NormalCard Spades (R 10)
+                          , NormalCard Hearts J, NormalCard Spades J
+                          , NormalCard Diamonds Q, NormalCard Clubs Q
+                          , NormalCard Hearts K, NormalCard Clubs K
+                          ]
+                , Play s3 [ NormalCard Clubs (R 2)
+                          , NormalCard Diamonds (R 2)
+                          , NormalCard Hearts (R 2)
+                          , NormalCard Spades (R 2)
+                          ]
                 ])
         |> andThenReturn
             (getActualStates tableName (s1, s2, s3, s4))
