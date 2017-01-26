@@ -323,8 +323,18 @@ view ctx model =
       (List.map (\table ->
           div [ class "col-md-6" ]
             [ Html.map (always <| ctx.mapMsg Unused) (oldTichuView table) ]
-        ) model.playerState
-        ))
+        ) model.playerState)
+      ++
+      (List.map (\table ->
+          div []
+            (List.map (\round ->
+                  div [ class "col-md-3" ]
+                      (List.map (\playerPoints ->
+                          div [ class "col-md-3" ] [ text <| toString playerPoints ])
+                          (calculatePlayersPoints round)))
+                  table.history)
+        ) model.playerState)
+      )
     , displayResult model.result
     ]
 
