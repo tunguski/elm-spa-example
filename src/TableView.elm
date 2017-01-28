@@ -214,7 +214,7 @@ printRow content =
 
 printCards : List Card -> List Card -> List (Html Msg)
 printCards cards selection =
-    List.map (printCard selection) cards
+    List.map (printCard selection) (List.sortWith cardOrder cards)
 
 
 printCard : List Card -> Card -> Html Msg
@@ -251,7 +251,7 @@ printCardSkeleton card =
 
 printTableHand : List Card -> List (Html Msg)
 printTableHand cards =
-    printCards cards []
+    printCards (List.sortWith cardOrder cards) []
 
 
 showRound : Round -> Html Msg
