@@ -25,6 +25,7 @@ testCombinations =
         [ testFullHouse
         , testFullHouseWithPhoenix
         , testPairStairs
+        , testStraightWithMahJong
         ]
 
 
@@ -57,6 +58,20 @@ testPairStairs =
         , NormalCard Diamonds (R 6)
         , NormalCard Hearts (R 7)
         , NormalCard Spades (R 7)
+        ]
+
+
+testStraightWithMahJong =
+    checkCombination
+        "Straight with MahJong"
+        [ MahJong
+        , NormalCard Hearts (R 2)
+        , NormalCard Diamonds (R 3)
+        , NormalCard Clubs (R 4)
+        , NormalCard Spades (R 5)
+        , NormalCard Spades (R 6)
+        , NormalCard Spades (R 7)
+        , NormalCard Hearts (R 8)
         ]
 
 

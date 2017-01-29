@@ -174,6 +174,8 @@ update seed action model =
 type PlayerRequest
     = Pass Session
     | Play Session (List Card)
+    | Tichu Session
+    | GiveDragon Session String
 
 
 playRound : Int -> List PlayerRequest -> Task Error (List String)
@@ -191,6 +193,15 @@ playRound seed requests =
                     gamesWithSession session
                     |> withBody (encodeCards list)
                     |> postCommand (tableName ++ "/hand")
+
+                Tichu session ->
+                    gamesWithSession session
+                    |> postCommand (tableName ++ "/declareTichu")
+
+                GiveDragon session body ->
+                    gamesWithSession session
+                    |> withBody body
+                    |> postCommand (tableName ++ "/giveDragon")
         ) requests
         |> Task.sequence
 
@@ -323,12 +334,102 @@ firstRound seed (s1, s2, s3, s4) =
 secondRound seed (s1, s2, s3, s4) =
     playFullRound seed "round2" (s1, s2, s3, s4)
         (False, False, False, False)
-        ( [ (NormalCard Spades (R 2)), Phoenix, (NormalCard Spades (R 3)) ]
-        , [ (NormalCard Hearts (R 7)), (NormalCard Clubs A), (NormalCard Clubs (R 8)) ]
-        , [ (NormalCard Hearts (R 3)), (NormalCard Spades A), (NormalCard Diamonds (R 3)) ]
-        , [ (NormalCard Diamonds (R 5)), Dragon, (NormalCard Hearts (R 5)) ]
+        ( [ (NormalCard Diamonds (R 2)), (NormalCard Hearts Q), (NormalCard Spades (R 9)) ]
+        , [ (NormalCard Clubs (R 5)), (NormalCard Hearts K), (NormalCard Diamonds (R 8)) ]
+        , [ (NormalCard Spades (R 2)), (NormalCard Clubs (R 9)), (NormalCard Spades (R 8)) ]
+        , [ (NormalCard Hearts (R 2)), (NormalCard Spades Q), (NormalCard Hearts (R 4)) ]
         )
-        [ Play s4 [ MahJong ]
+        [ Play s2 [ MahJong
+                  , NormalCard Hearts (R 2)
+                  , NormalCard Diamonds (R 3)
+                  , NormalCard Clubs (R 4)
+                  , NormalCard Spades (R 5)
+                  , NormalCard Spades (R 6)
+                  , NormalCard Spades (R 7)
+                  , NormalCard Hearts (R 8)
+                  ]
+        , Pass s3
+        , Pass s4
+        , Pass s1
+        , Play s2 [ Dog ]
+        , Tichu s4
+        , Play s4 [ NormalCard Spades (R 4) ]
+        , Play s1 [ NormalCard Diamonds (R 5) ]
+        , Pass s2
+        , Tichu s3
+        , Play s3 [ NormalCard Diamonds (R 8) ]
+        , Play s4 [ NormalCard Hearts Q ]
+        , Pass s1
+        , Pass s2
+        , Play s3 [ NormalCard Hearts A ]
+        , Pass s4
+        , Pass s1
+        , Pass s2
+        , Play s3 [ NormalCard Diamonds (R 2) ]
+        , Play s4 [ NormalCard Hearts (R 7) ]
+        , Play s1 [ NormalCard Clubs (R 10) ]
+        , Pass s2
+        , Play s3 [ NormalCard Diamonds A ]
+        , Play s4 [ Phoenix ]
+        , Pass s1
+        , Pass s2
+        , Play s3 [ Dragon ]
+        , Pass s4
+        , Pass s1
+        , Pass s2
+        , GiveDragon s3 "next"
+        , Play s3
+            [ NormalCard Clubs (R 3)
+            , NormalCard Spades (R 3)
+            , NormalCard Diamonds J
+            , NormalCard Hearts J
+            , NormalCard Spades J
+            ]
+        , Pass s4
+        , Pass s1
+        , Pass s2
+        , Play s3
+            [ NormalCard Diamonds Q
+            , NormalCard Clubs Q
+            , NormalCard Spades Q
+            ]
+        , Pass s4
+        , Pass s1
+        , Pass s2
+        , Play s3 [ NormalCard Diamonds (R 10) ]
+        , Pass s4
+        , Pass s1
+        , Pass s2
+        , Play s4 [ NormalCard Clubs (R 8), NormalCard Spades (R 8)
+                  , NormalCard Hearts (R 9), NormalCard Diamonds (R 9)
+                  , NormalCard Hearts (R 10), NormalCard Spades (R 10)
+                  ]
+        , Pass s1
+        , Pass s2
+        , Play s4 [ NormalCard Hearts (R 5), NormalCard Clubs (R 5) ]
+        , Pass s1
+        , Play s2 [ NormalCard Clubs (R 7), NormalCard Diamonds (R 7) ]
+        , Play s4 [ NormalCard Spades A, NormalCard Clubs A ]
+        , Pass s1
+        , Pass s2
+        , Play s1
+            [ NormalCard Hearts (R 4)
+            , NormalCard Diamonds (R 4)
+            , NormalCard Hearts (R 6)
+            , NormalCard Diamonds (R 6)
+            , NormalCard Clubs (R 6)
+            ]
+        , Pass s2
+        , Play s1 [ NormalCard Hearts (R 3) ]
+        , Play s2 [ NormalCard Clubs J ]
+        , Play s1
+            [ NormalCard Hearts K
+            , NormalCard Diamonds K
+            , NormalCard Spades K
+            , NormalCard Clubs K
+            ]
+        , Pass s2
+        , Play s1 [ NormalCard Clubs (R 2), NormalCard Spades (R 2) ]
         ]
 
 
