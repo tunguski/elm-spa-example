@@ -51,7 +51,7 @@ model =
         Nothing
         Nothing
         Nothing
-        (initGame "TestGame" 0 []
+        (initGame "TestGame" True 0 []
             |> encodeGame
             |> decodeString gameDecoder
         )

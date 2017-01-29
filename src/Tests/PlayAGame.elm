@@ -146,10 +146,16 @@ update seed action model =
         PlayRound id result ->
             case result of
                 Ok games ->
-                    { model
-                    | result = Just <| Ok "finished"
-                    , playerState = toList games
-                    } ! case model.sessions of
+                    (
+                    { model | playerState = toList games }
+                    |> (\m ->
+                        -- if that was last round and it finished property, test ended
+                        if id == "round2" then
+                            { m | result = Just <| Ok "finished" }
+                        else
+                            m
+                    )
+                    ) ! case model.sessions of
                             Just sessions ->
                                 case id of
                                     "round1" -> [ secondRound seed sessions ]
@@ -447,13 +453,17 @@ view ctx model =
         ) model.playerState)
       ++
       (List.map (\table ->
-          div []
-            (List.map (\round ->
-                  div [ class "col-md-3" ]
-                      (List.map (\playerPoints ->
-                          div [ class "col-md-3" ] [ text <| toString playerPoints ])
+          div [ class "col-md-3" ]
+            (List.indexedMap (\i round ->
+                  div []
+                      (div [ class "col-md-offset-2 col-md-2" ] [ text <| (toString <| i + 1) ++ ". " ]
+                       ::
+                       List.map (\playerPoints ->
+                          div [ class "col-md-2" ] [ text <| toString playerPoints ])
                           (calculatePlayersPoints round)))
-                  table.history)
+                  table.history
+             |> List.reverse
+            )
         ) model.playerState)
       )
     , displayResult model.result
