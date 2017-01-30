@@ -85,7 +85,6 @@ type Msg
     | DeclareTichu Player
     | DeclareGrandTichu Player
     | PlaceCombination
-    | MorePlease
 
 
 update : ComponentUpdate Model msg Msg
@@ -142,10 +141,6 @@ update ctx action model =
             model ! []
             --( updateGame game [ UpdateRound placeCombination ], Cmd.none )
 
-        MorePlease ->
-            model ! []
-            --( game, getRandomGif "cat" )
-
 
 -- VIEW
 
@@ -157,11 +152,45 @@ view ctx model =
             Just game ->
                 gameView ctx game
             Nothing ->
-                div [] []
+                case model.awaitingTable of
+                    Just awaitingTable ->
+                        div []
+                            [ node "style" [] [ text cssStyle ]
+                            , awaitingTableView ctx awaitingTable
+                            ]
+                    Nothing ->
+                        div [] []
+
+
+awaitingTableView : Context msg cMsg -> AwaitingTable -> Html msg
+awaitingTableView ctx table =
+    multiCellRow
+        [ ( 2
+          , [ div [ class "table-chat" ]
+                [ div [ class "chat-header" ] [ text "Chat" ]
+                , div [] [ text "fsdds" ]
+                , div [] [ text "asdf" ]
+                ]
+            ]
+          )
+        , ( 8, [ div [ class "table-main" ]
+                [ div [ class "player-left" ] [ text "player left" ]
+                , div [ class "player-right" ] [ text "player right" ]
+                , div [ class "player-top" ] [ text "player top" ]
+                , div [ class "player-bottom" ] [ text "player bottom" ]
+                ]
+               ] )
+        , ( 2
+          , [ div [ class "table-options" ]
+                [ div [ class "table-options-header" ] [ text "Game" ]
+                ]
+            ]
+          )
+        ]
 
 
 gameView : Context msg cMsg -> Game -> Html msg
-gameView ctx model =
+gameView ctx game =
     multiCellRow
         [ ( 2
           , [ div [ class "table-chat" ]
@@ -185,8 +214,8 @@ oldTichuView : Game -> Html Msg
 oldTichuView game =
     div []
         --[ node "link" [ rel "stylesheet", href "https://bootswatch.com/darkly/bootstrap.css" ] []
-        [ node "style" [] [ text (cssStyle game) ]
-        , div [ class "container" ]
+        [ node "style" [] [ text cssStyle ]
+        , div [ class "" ]
             (List.map printRow
                 [ [ showRound game.round ]
                 , [ button
@@ -194,12 +223,6 @@ oldTichuView game =
                         , onClick PlaceCombination
                         ]
                         [ text "Place" ]
-                  ]
-                , [ button
-                        [ class "btn btn-sm btn-info"
-                        , onClick MorePlease
-                        ]
-                        [ text "More Please" ]
                   ]
                   --        , h3 [] [ text "Logs" ] :: map (\l -> div [ class "text-muted" ] [ text (toString l) ]) game.log
                 ]
@@ -292,8 +315,8 @@ showPlayer actualPlayer ( index, player ) =
 -----------------------------------------------------------------------------
 
 
-cssStyle : Game -> String
-cssStyle game =
+cssStyle : String
+cssStyle =
     """
 .card-outer {
   border: 1px solid grey;
@@ -329,6 +352,33 @@ cssStyle game =
 .clubs:after {
   content: '♣';
   color: blue;
+}
+.table-main {
+    position: relative;
+}
+.player-left {
+    position: absolute;
+    display: inline-block;
+    left: 0px;
+    top: 40%;
+}
+.player-right {
+    position: absolute;
+    display: inline-block;
+    right: 0px;
+    top: 40%;
+}
+.player-top {
+    position: absolute;
+    display: inline-block;
+    top: 0px;
+    left: 45%;
+}
+.player-bottom {
+    position: absolute;
+    display: inline-block;
+    bottom: 0px;
+    left: 45%;
 }
 """
 

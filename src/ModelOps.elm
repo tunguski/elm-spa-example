@@ -31,7 +31,7 @@ emptyModel =
     , place = ME_Dashboard
     , session = Nothing
     , menu = menuDefinition
-    , config = (CssConfig (Size 0 0) False)
+    , config = (CssConfig (Size 1366 768) False)
     , dashboardComponent = Dashboard.component
     , tableComponent = TableView.component "nonexistent"
     , loginComponent = LoginScreen.component PlayAsGuest
@@ -49,11 +49,11 @@ initModel url =
             Task.perform (Resize) Window.size
 
         session =
-            get "" sessions 
+            get "" sessions
             |> Task.attempt GetSession
 
         parsed =
-          parseHash urlParser url 
+          parseHash urlParser url
 
         ( model, cmd ) =
             changeLocation parsed emptyModel
