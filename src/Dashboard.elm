@@ -39,18 +39,19 @@ type alias Model =
     , openTables : Maybe (List AwaitingTable)
     , players : Maybe (List Player)
     , lastFinishedTableUpdate : Maybe Time
+    , gameConfig : GameConfig
     }
 
 
 model : Model
 model =
-    Model "" Nothing Nothing Nothing
+    Model "" Nothing Nothing Nothing (GameConfig Humans)
 
 
 init : Context msg Msg -> Cmd msg
 init ctx =
-    Task.map2 (,) 
-      now 
+    Task.map2 (,)
+      now
       (findAll awaitingTables)
     |> Task.attempt (UpdateTables >> ctx.mapMsg)
 
@@ -71,6 +72,7 @@ type Msg
     | OpenTable String
     | UpdateTables (Result Http.Error ( Time, List AwaitingTable ))
     | CheckUpdate Time
+    | SwitchTo GameType
 
 
 update : ComponentUpdate Model msg Msg
@@ -79,9 +81,17 @@ update ctx action model =
         TableName name ->
             { model | newTableName = name } ! []
 
+        SwitchTo gameType ->
+            let
+                gameConfig = model.gameConfig
+            in
+                { model | gameConfig = { gameConfig | gameType = gameType } } ! []
+
         CreateNewTable ->
             model
-                ! [ postCommand model.newTableName awaitingTables
+                ! [ awaitingTables
+                    |> withBody (encodeGameConfig model.gameConfig)
+                    |> postCommand model.newTableName
                     |> Task.attempt (\r -> ctx.mapMsg <| OpenTable model.newTableName)
                   ]
 
@@ -120,6 +130,25 @@ update ctx action model =
 -- VIEW
 
 
+gameTypeRadio ctx isChecked description gameType =
+    div [ class "form-group" ]
+      [ label [ class "radio-inline" ]
+          [ input
+              ([ type_ "radio"
+              , name "game-type"
+              , onClick <| ctx.mapMsg <| SwitchTo gameType
+              ]
+              ++
+              case isChecked of
+                  True -> [ checked True ]
+                  False -> []
+              )
+              []
+          , text description
+          ]
+      ]
+
+
 view : ComponentView Model msg Msg
 view ctx model =
     Page "Dashboard" <|
@@ -134,6 +163,9 @@ view ctx model =
                         ]
                         []
                     ]
+                , gameTypeRadio ctx (model.gameConfig.gameType == Humans) "Humans only" Humans
+                , gameTypeRadio ctx False "Humans vs. bots" HumansVsBots
+                , gameTypeRadio ctx False "Play with bots" Bots
                 , button
                     [ class "btn btn-primary"
                     , onClick <| ctx.mapMsg CreateNewTable
