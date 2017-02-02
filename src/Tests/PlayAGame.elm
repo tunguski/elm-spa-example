@@ -14,7 +14,7 @@ import Component exposing (..)
 import Rest exposing (..)
 import SessionModel exposing (..)
 import TichuModel exposing (..)
-import TichuModelJson exposing (encodeCards)
+import TichuModelJson exposing (encodeCards, encodeGameConfig)
 import TestBasics exposing (..)
 import TableView exposing (gameView, oldTichuView)
 
@@ -72,6 +72,7 @@ initPlayAGame seed model =
             -- ad. 2
             (awaitingTablesWithSession (quadGet 1 sessions)
              |> withHeader "X-Test-Game-Seed" "0"
+             |> withBody (encodeGameConfig <| GameConfig Humans)
              |> postCommand tableName)
             |> andThenReturn
                 -- ad. 3

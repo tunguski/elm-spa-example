@@ -51,11 +51,11 @@ model =
         Nothing
         Nothing
         Nothing
-        (initGame "TestGame" True 0 []
+        (initGame "TestGame" (GameConfig Humans) True 0 []
             |> encodeGame
             |> decodeString gameDecoder
         )
-        (AwaitingTable "AwaitingTable" [ AwaitingTableUser "player one" 0 False ] True 0
+        (AwaitingTable "AwaitingTable" (GameConfig Humans) [ AwaitingTableUser "player one" 0 False True ] True 0
             |> encodeAwaitingTable
             |> decodeString awaitingTableDecoder
         )
