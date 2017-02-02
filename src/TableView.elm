@@ -162,6 +162,16 @@ view ctx model =
                         div [] []
 
 
+playerBox className table index =
+    div [ class className ]
+        [ case List.drop index table.users |> List.head of
+            Just player ->
+                text player.name
+            _ ->
+                text "awaiting for player"
+        ]
+
+
 awaitingTableView : Context msg cMsg -> AwaitingTable -> Html msg
 awaitingTableView ctx table =
     multiCellRow
@@ -174,10 +184,10 @@ awaitingTableView ctx table =
             ]
           )
         , ( 8, [ div [ class "table-main" ]
-                [ div [ class "player-left" ] [ text "player left" ]
-                , div [ class "player-right" ] [ text "player right" ]
-                , div [ class "player-top" ] [ text "player top" ]
-                , div [ class "player-bottom" ] [ text "player bottom" ]
+                [ playerBox "player-bottom" table 0
+                , playerBox "player-right" table 1
+                , playerBox "player-top" table 2
+                , playerBox "player-left" table 3
                 ]
                ] )
         , ( 2
