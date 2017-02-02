@@ -167,10 +167,16 @@ view ctx model =
                 , gameTypeRadio ctx False "Humans vs. bots" HumansVsBots
                 , gameTypeRadio ctx False "Play with bots" Bots
                 , button
-                    [ class "btn btn-primary"
-                    , onClick <| ctx.mapMsg CreateNewTable
+                    ([ class "btn btn-primary"
                     , type_ "button"
                     ]
+                    ++
+                      case String.length model.newTableName >= 3 of
+                        True ->
+                            [ onClick <| ctx.mapMsg CreateNewTable ]
+                        False ->
+                            [ disabled True ]
+                    )
                     [ text "Create New Table" ]
                 ]
             , h3 [] [ text "Open Tables" ]
