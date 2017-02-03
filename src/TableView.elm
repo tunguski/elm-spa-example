@@ -44,12 +44,6 @@ model name =
     Model name Nothing Nothing Nothing
 
 
-getTable : String -> (RestResult Game -> msg) -> Cmd msg
-getTable tableId msg =
-    get tableId games
-    |> Task.attempt msg
-
-
 init : String -> Context msg Msg -> Cmd msg
 init name ctx =
     Task.map2
@@ -64,15 +58,30 @@ init name ctx =
                     |> Task.map Err
                 )
         )
-        |> Task.attempt UpdateTables
-        |> Cmd.map ctx.mapMsg
+    |> Task.attempt UpdateTables
+    |> Cmd.map ctx.mapMsg
+
+
+getTable : String -> Context msg Msg -> Cmd msg
+getTable name ctx =
+    Task.map2
+        (,)
+        now
+        (get name games |> Task.map Err)
+    |> Task.attempt UpdateTables
+    |> Cmd.map ctx.mapMsg
+
+
+startGame : String -> (RestResult String -> msg) -> Cmd msg
+startGame name msg =
+    postCommand (name ++ "/start") awaitingTables
+    |> Task.attempt msg
 
 
 subs : Context msg Msg -> model -> Sub msg
 subs ctx model =
     every second CheckUpdate
         |> Sub.map ctx.mapMsg
-
 
 
 -- UPDATE
@@ -85,6 +94,8 @@ type Msg
     | DeclareTichu Player
     | DeclareGrandTichu Player
     | PlaceCombination
+    | Start
+    | SentStart (RestResult String)
 
 
 update : ComponentUpdate Model msg Msg
@@ -118,7 +129,10 @@ update ctx action model =
                         { model
                             | lastFinishedTableUpdate = Nothing
                         }
-                            ! [ init model.name ctx ]
+                            ! [ case model.game of
+                                    Just _ -> getTable model.name ctx
+                                    _ -> init model.name ctx
+                              ]
                     else
                         model ! []
 
@@ -140,6 +154,14 @@ update ctx action model =
         PlaceCombination ->
             model ! []
             --( updateGame game [ UpdateRound placeCombination ], Cmd.none )
+
+        Start ->
+            model ! case model.awaitingTable of
+                        Just t -> [ startGame t.name <| ctx.mapMsg << SentStart ]
+                        _ -> []
+
+        SentStart result ->
+            model ! []
 
 
 -- VIEW
@@ -172,7 +194,7 @@ playerBox className table index =
         ]
 
 
-awaitingTableView : Context msg cMsg -> AwaitingTable -> Html msg
+awaitingTableView : Context msg Msg -> AwaitingTable -> Html msg
 awaitingTableView ctx table =
     multiCellRow
         [ ( 2
@@ -188,6 +210,21 @@ awaitingTableView ctx table =
                 , playerBox "player-right" table 1
                 , playerBox "player-top" table 2
                 , playerBox "player-left" table 3
+                , List.head table.users
+                  |> Maybe.map (.pressedStart >> not >> (&&) (List.length table.users == 4))
+                  |> Maybe.andThen (\show ->
+                      case show of
+                          True ->
+                              Just <|
+                                div
+                                  [ class "btn btn-primary middle-table"
+                                  , onClick <| ctx.mapMsg Start
+                                  ]
+                                  [ text "Start" ]
+                          _ ->
+                              Nothing
+                  )
+                  |> Maybe.withDefault (div [] [])
                 ]
                ] )
         , ( 2
@@ -388,6 +425,12 @@ cssStyle =
     position: absolute;
     display: inline-block;
     bottom: 0px;
+    left: 45%;
+}
+.middle-table {
+    position: absolute;
+    display: inline-block;
+    top: 45%;
     left: 45%;
 }
 """
