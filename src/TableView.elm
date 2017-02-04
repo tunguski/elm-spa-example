@@ -167,24 +167,27 @@ update ctx action model =
 -- VIEW
 
 
+orElse maybe generator =
+    case maybe of
+        Nothing -> generator
+        _ -> maybe
+
+
 view : ComponentView Model msg Msg
 view ctx model =
     Page "Table" <|
-        case model.game of
-            Just game ->
-                div []
-                    [ node "style" [] [ text cssStyle ]
-                    , gameView ctx game
-                    ]
-            Nothing ->
-                case model.awaitingTable of
-                    Just awaitingTable ->
-                        div []
-                            [ node "style" [] [ text cssStyle ]
-                            , awaitingTableView ctx awaitingTable
-                            ]
-                    Nothing ->
-                        div [] []
+        div [] <|
+            [ node "style" [] [ text cssStyle ] ]
+            ++
+            case model.game of
+                Just game ->
+                        [ gameView ctx game ]
+                Nothing ->
+                    case model.awaitingTable of
+                        Just awaitingTable ->
+                            [ awaitingTableView ctx awaitingTable ]
+                        Nothing ->
+                            []
 
 
 playerBox className table index =
@@ -195,6 +198,19 @@ playerBox className table index =
             _ ->
                 text "awaiting for player"
         ]
+
+
+playerGameBox : String -> Game -> Int -> Html Msg
+playerGameBox className game index =
+    case List.drop index game.round.players |> List.head of
+        Just player ->
+            div [ class className ] <|
+                printTableHand player.hand
+                ++
+                [ text player.name
+                ]
+        _ ->
+            div [ class className ] [ text "error" ]
 
 
 awaitingTableView : Context msg Msg -> AwaitingTable -> Html msg
@@ -239,7 +255,7 @@ awaitingTableView ctx table =
         ]
 
 
-gameView : Context msg cMsg -> Game -> Html msg
+gameView : Context msg Msg -> Game -> Html msg
 gameView ctx game =
     multiCellRow
         [ ( 2
@@ -250,12 +266,13 @@ gameView ctx game =
                 ]
             ]
           )
-        , ( 8, [ div [ class "table-main" ]
-                [ playerBox "player-bottom" game 0
-                , playerBox "player-right" game 1
-                , playerBox "player-top" game 2
-                , playerBox "player-left" game 3
-                ]
+        , ( 8, [ Html.map ctx.mapMsg <|
+                    div [ class "table-main" ]
+                        [ playerGameBox "player-bottom" game 0
+                        , playerGameBox "player-right" game 1
+                        , playerGameBox "player-top" game 2
+                        , playerGameBox "player-left" game 3
+                        ]
                ] )
         , ( 2
           , [ div [ class "table-options" ]
