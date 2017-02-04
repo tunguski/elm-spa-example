@@ -172,7 +172,10 @@ view ctx model =
     Page "Table" <|
         case model.game of
             Just game ->
-                gameView ctx game
+                div []
+                    [ node "style" [] [ text cssStyle ]
+                    , gameView ctx game
+                    ]
             Nothing ->
                 case model.awaitingTable of
                     Just awaitingTable ->
@@ -247,7 +250,13 @@ gameView ctx game =
                 ]
             ]
           )
-        , ( 8, [ div [ class "table-main" ] [ text "main" ] ] )
+        , ( 8, [ div [ class "table-main" ]
+                [ playerBox "player-bottom" game 0
+                , playerBox "player-right" game 1
+                , playerBox "player-top" game 2
+                , playerBox "player-left" game 3
+                ]
+               ] )
         , ( 2
           , [ div [ class "table-options" ]
                 [ div [ class "table-options-header" ] [ text "Game" ]
