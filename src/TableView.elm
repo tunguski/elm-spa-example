@@ -35,13 +35,14 @@ type alias Model =
     { name : String
     , awaitingTable : Maybe AwaitingTable
     , game : Maybe Game
+    , selection : List Card
     , lastFinishedTableUpdate : Maybe Time
     }
 
 
 model : String -> Model
 model name =
-    Model name Nothing Nothing Nothing
+    Model name Nothing Nothing [] Nothing
 
 
 init : String -> Context msg Msg -> Cmd msg
@@ -140,7 +141,11 @@ update ctx action model =
                     model ! []
 
         CheckCard card ->
-            model ! []
+            case List.member card model.selection of
+                True ->
+                    { model | selection = List.filter ((/=) card) model.selection } ! []
+                False ->
+                    { model | selection = card :: model.selection } ! []
             --( updateGame game [ UpdatePlayer (checkCard card) ], Cmd.none )
 
         DeclareTichu player ->
@@ -181,7 +186,7 @@ view ctx model =
             ++
             case model.game of
                 Just game ->
-                        [ gameView ctx game ]
+                        [ gameView ctx model.selection game ]
                 Nothing ->
                     case model.awaitingTable of
                         Just awaitingTable ->
@@ -200,12 +205,12 @@ playerBox className table index =
         ]
 
 
-playerGameBox : String -> Game -> Int -> Html Msg
-playerGameBox className game index =
+playerGameBox : List Card -> String -> Game -> Int -> Html Msg
+playerGameBox selection className game index =
     case List.drop index game.round.players |> List.head of
         Just player ->
             div [ class className ] <|
-                printTableHand player.hand
+                printTableHand selection player.hand
                 ++
                 [ text player.name
                 ]
@@ -255,8 +260,8 @@ awaitingTableView ctx table =
         ]
 
 
-gameView : Context msg Msg -> Game -> Html msg
-gameView ctx game =
+gameView : Context msg Msg -> List Card -> Game -> Html msg
+gameView ctx selection game =
     multiCellRow
         [ ( 2
           , [ div [ class "table-chat" ]
@@ -268,10 +273,10 @@ gameView ctx game =
           )
         , ( 8, [ Html.map ctx.mapMsg <|
                     div [ class "table-main" ]
-                        [ playerGameBox "player-bottom" game 0
-                        , playerGameBox "player-right" game 1
-                        , playerGameBox "player-top" game 2
-                        , playerGameBox "player-left" game 3
+                        [ playerGameBox selection "player-bottom" game 0
+                        , playerGameBox selection "player-right" game 1
+                        , playerGameBox selection "player-top" game 2
+                        , playerGameBox selection "player-left" game 3
                         ]
                ] )
         , ( 2
@@ -283,14 +288,14 @@ gameView ctx game =
         ]
 
 
-oldTichuView : Game -> Html Msg
-oldTichuView game =
+oldTichuView : List Card -> Game -> Html Msg
+oldTichuView selection game =
     div []
         --[ node "link" [ rel "stylesheet", href "https://bootswatch.com/darkly/bootstrap.css" ] []
         [ node "style" [] [ text cssStyle ]
         , div [ class "" ]
             (List.map printRow
-                [ [ showRound game.round ]
+                [ [ showRound selection game.round ]
                 , [ button
                         [ class "btn btn-sm btn-primary"
                         , onClick PlaceCombination
@@ -345,27 +350,28 @@ printCardSkeleton card =
             text (toString a)
 
 
-printTableHand : List Card -> List (Html Msg)
-printTableHand cards =
-    printCards (List.sortWith cardOrder cards) []
+printTableHand : List Card -> List Card -> List (Html Msg)
+printTableHand selection cards =
+    printCards (List.sortWith cardOrder cards) selection
 
 
-showRound : Round -> Html Msg
-showRound round =
+
+showRound : List Card -> Round -> Html Msg
+showRound selection round =
     let
         table =
             List.map (\s -> div [] s)
-                (List.map printTableHand round.table)
+                (List.map (printTableHand selection) round.table)
 
         players =
-            List.map (showPlayer round.actualPlayer)
+            List.map (showPlayer selection round.actualPlayer)
                 (List.indexedMap (,) round.players)
     in
         div [] (table ++ players)
 
 
-showPlayer : Int -> ( Int, Player ) -> Html Msg
-showPlayer actualPlayer ( index, player ) =
+showPlayer : List Card -> Int -> ( Int, Player ) -> Html Msg
+showPlayer selection actualPlayer ( index, player ) =
     div [] <|
         (div
             [ class
@@ -379,7 +385,7 @@ showPlayer actualPlayer ( index, player ) =
             ]
             [ text (player.name ++ " " ++ toString player.cardsOnHand) ]
         )
-            :: printCards player.hand player.selection
+            :: printCards player.hand selection
 
 
 
