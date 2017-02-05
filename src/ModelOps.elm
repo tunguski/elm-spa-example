@@ -33,7 +33,7 @@ emptyModel =
     , menu = menuDefinition
     , config = (CssConfig (Size 1366 768) False)
     , dashboardComponent = Dashboard.component
-    , tableComponent = TableView.component "nonexistent"
+    , tableComponent = TableView.component "noone" "nonexistent"
     , loginComponent = LoginScreen.component PlayAsGuest
     , taskComponent = Task.component
     , memberComponent = Member.component
@@ -137,7 +137,11 @@ changeLocation location model =
 
                           False ->
                               -- create new component on each url change
-                              { model | tableComponent = TableView.component name }
+                              case model.session of
+                                    Just session ->
+                                        { model | tableComponent = TableView.component session.username name }
+                                    Nothing ->
+                                        model
                       )
                       place
 

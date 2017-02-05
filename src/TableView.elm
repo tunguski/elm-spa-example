@@ -19,12 +19,12 @@ import TichuModel exposing (..)
 import TichuModelJson exposing (..)
 
 
-component : String -> Component Model msg Msg
-component name =
-    Component (model name)
+component : String -> String -> Component Model msg Msg
+component userName tableName =
+    Component (model userName tableName)
         update
         view
-        (Just (init name))
+        (Just (init tableName))
         (Just subs)
 
 
@@ -32,7 +32,8 @@ component name =
 
 
 type alias Model =
-    { name : String
+    { userName : String
+    , name : String
     , awaitingTable : Maybe AwaitingTable
     , game : Maybe Game
     , selection : List Card
@@ -40,9 +41,9 @@ type alias Model =
     }
 
 
-model : String -> Model
-model name =
-    Model name Nothing Nothing [] Nothing
+model : String -> String -> Model
+model userName tableName =
+    Model userName tableName Nothing Nothing [] Nothing
 
 
 init : String -> Context msg Msg -> Cmd msg
@@ -127,9 +128,7 @@ update ctx action model =
             case model.lastFinishedTableUpdate of
                 Just last ->
                     if last + (3 * second) < time then
-                        { model
-                            | lastFinishedTableUpdate = Nothing
-                        }
+                        { model | lastFinishedTableUpdate = Nothing }
                             ! [ case model.game of
                                     Just _ -> getTable model.name ctx
                                     _ -> init model.name ctx
@@ -146,7 +145,6 @@ update ctx action model =
                     { model | selection = List.filter ((/=) card) model.selection } ! []
                 False ->
                     { model | selection = card :: model.selection } ! []
-            --( updateGame game [ UpdatePlayer (checkCard card) ], Cmd.none )
 
         DeclareTichu player ->
             model ! []
@@ -186,7 +184,7 @@ view ctx model =
             ++
             case model.game of
                 Just game ->
-                        [ gameView ctx model.selection game ]
+                        [ gameView ctx model.userName model.selection game ]
                 Nothing ->
                     case model.awaitingTable of
                         Just awaitingTable ->
@@ -218,17 +216,30 @@ playerGameBox selection className game index =
             div [ class className ] [ text "error" ]
 
 
+chatPanel chatData =
+    ( 2
+    , [ div [ class "table-chat" ]
+          [ div [ class "chat-header" ] [ text "Chat" ]
+          , div [] [ text "fsdds" ]
+          , div [] [ text "asdf" ]
+          ]
+      ]
+    )
+
+
+gameSummaryPanel gameSummary =
+    ( 2
+    , [ div [ class "table-options" ]
+          [ div [ class "table-options-header" ] [ text "Game" ]
+          ]
+      ]
+    )
+
+
 awaitingTableView : Context msg Msg -> AwaitingTable -> Html msg
 awaitingTableView ctx table =
     multiCellRow
-        [ ( 2
-          , [ div [ class "table-chat" ]
-                [ div [ class "chat-header" ] [ text "Chat" ]
-                , div [] [ text "fsdds" ]
-                , div [] [ text "asdf" ]
-                ]
-            ]
-          )
+        [ chatPanel ()
         , ( 8, [ div [ class "table-main" ]
                 [ playerBox "player-bottom" table 0
                 , playerBox "player-right" table 1
@@ -251,41 +262,59 @@ awaitingTableView ctx table =
                   |> Maybe.withDefault (div [] [])
                 ]
                ] )
-        , ( 2
-          , [ div [ class "table-options" ]
-                [ div [ class "table-options-header" ] [ text "Game" ]
-                ]
-            ]
-          )
+        , gameSummaryPanel ()
         ]
 
 
-gameView : Context msg Msg -> List Card -> Game -> Html msg
-gameView ctx selection game =
-    multiCellRow
-        [ ( 2
-          , [ div [ class "table-chat" ]
-                [ div [ class "chat-header" ] [ text "Chat" ]
-                , div [] [ text "fsdds" ]
-                , div [] [ text "asdf" ]
-                ]
+grandTichuButton game player =
+    case player.sawAllCards of
+        True -> div [] []
+        False -> button [ class "btn btn-primary" ] [ text "Grand Tichu" ]
+
+
+tichuButton game player =
+    case player.sawAllCards of
+        True -> div [] []
+        False -> button [ class "btn btn-primary" ] [ text "Tichu" ]
+
+
+playButton game player =
+    case player.sawAllCards of
+        True -> div [] []
+        False -> button [ class "btn btn-primary" ] [ text "Play" ]
+
+
+passButton game player =
+    case player.sawAllCards of
+        True -> div [] []
+        False -> button [ class "btn btn-primary" ] [ text "Pass" ]
+
+
+gameView : Context msg Msg -> String -> List Card -> Game -> Html msg
+gameView ctx userName selection game =
+    List.filter (.name >> (==) userName) game.round.players
+    |> List.head
+    |> Maybe.map (\player ->
+        multiCellRow
+            [ chatPanel game
+            , ( 8, [ Html.map ctx.mapMsg <|
+                        div [ class "table-main" ]
+                            [ playerGameBox selection "player-bottom" game 0
+                            , playerGameBox selection "player-right" game 1
+                            , playerGameBox selection "player-top" game 2
+                            , playerGameBox selection "player-left" game 3
+                            , div [ class "game-buttons" ]
+                                [ grandTichuButton game player
+                                , tichuButton game player
+                                , playButton game player
+                                , passButton game player
+                                ]
+                            ]
+                   ] )
+            , gameSummaryPanel game
             ]
-          )
-        , ( 8, [ Html.map ctx.mapMsg <|
-                    div [ class "table-main" ]
-                        [ playerGameBox selection "player-bottom" game 0
-                        , playerGameBox selection "player-right" game 1
-                        , playerGameBox selection "player-top" game 2
-                        , playerGameBox selection "player-left" game 3
-                        ]
-               ] )
-        , ( 2
-          , [ div [ class "table-options" ]
-                [ div [ class "table-options-header" ] [ text "Game" ]
-                ]
-            ]
-          )
-        ]
+        )
+    |> Maybe.withDefault (div [] [ text "" ])
 
 
 oldTichuView : List Card -> Game -> Html Msg
@@ -438,25 +467,25 @@ cssStyle =
 .player-left {
     position: absolute;
     display: inline-block;
-    left: 0px;
+    left: 10px;
     top: 40%;
 }
 .player-right {
     position: absolute;
     display: inline-block;
-    right: 0px;
+    right: 10px;
     top: 40%;
 }
 .player-top {
     position: absolute;
     display: inline-block;
-    top: 0px;
+    top: 10px;
     left: 45%;
 }
 .player-bottom {
     position: absolute;
     display: inline-block;
-    bottom: 0px;
+    bottom: 10px;
     left: 45%;
 }
 .middle-table {
@@ -464,6 +493,12 @@ cssStyle =
     display: inline-block;
     top: 45%;
     left: 45%;
+}
+.game-buttons {
+    position: absolute;
+    display: inline-block;
+    left: 10px;
+    bottom: 10px;
 }
 """
 
