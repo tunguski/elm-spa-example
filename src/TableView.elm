@@ -93,6 +93,7 @@ type Msg
     | SeeAllCards
     | Start
     | SentStart (RestResult String)
+    | CommandResult (RestResult String)
 
 
 update : ComponentUpdate Model msg Msg
@@ -141,25 +142,32 @@ update ctx action model =
                 False ->
                     { model | selection = card :: model.selection } ! []
 
-        SeeAllCards ->
-            -- fixme!
+        CommandResult result ->
             model ! []
+
+        SeeAllCards ->
+            sendCommand ctx model <|
+                postCommand (model.name ++ "/seeAllCards") games
 
         DeclareGrandTichu ->
-            -- fixme!
-            model ! []
+            sendCommand ctx model <|
+                postCommand (model.name ++ "/declareGrandTichu") games
 
         DeclareTichu ->
-            -- fixme!
-            model ! []
+            sendCommand ctx model <|
+                postCommand (model.name ++ "/declareTichu") games
 
         PlaceCombination ->
-            -- fixme!
-            model ! []
+            sendCommand ctx model <|
+                postCommand (model.name ++ "/hand") games
 
         Pass ->
-            -- fixme!
-            model ! []
+            sendCommand ctx model <|
+                postCommand (model.name ++ "/pass") games
+
+
+        -- ExchangeCards
+        -- GiveDragon
 
         Start ->
             model ! case model.awaitingTable of
@@ -168,6 +176,15 @@ update ctx action model =
 
         SentStart result ->
             model ! []
+
+
+sendCommand ctx model task =
+    model ! [
+        task
+        |> Task.attempt CommandResult
+        |> Cmd.map ctx.mapMsg
+    ]
+
 
 
 -- VIEW
