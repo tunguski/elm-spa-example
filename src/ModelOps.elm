@@ -141,7 +141,7 @@ changeLocation location model =
                                     Just session ->
                                         { model | tableComponent = TableView.component session.username name }
                                     Nothing ->
-                                        model
+                                        { model | tableComponent = TableView.component "noone" name }
                       )
                       place
 

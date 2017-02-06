@@ -51,15 +51,8 @@ init name ctx =
     Task.map2
         (,)
         now
-        ((get name awaitingTables
-            |> Task.map Ok
-         )
-            |> Task.onError
-                (\error ->
-                    get name games
-                    |> Task.map Err
-                )
-        )
+        ((get name awaitingTables|> Task.map Ok)
+         |> Task.onError (\error -> get name games |> Task.map Err))
     |> Task.attempt UpdateTables
     |> Cmd.map ctx.mapMsg
 
@@ -93,9 +86,11 @@ type Msg
     = UpdateTables (RestResult (Time, Result Game AwaitingTable))
     | CheckUpdate Time
     | CheckCard Card
-    | DeclareTichu Player
-    | DeclareGrandTichu Player
+    | DeclareTichu
+    | DeclareGrandTichu
     | PlaceCombination
+    | Pass
+    | SeeAllCards
     | Start
     | SentStart (RestResult String)
 
@@ -146,17 +141,25 @@ update ctx action model =
                 False ->
                     { model | selection = card :: model.selection } ! []
 
-        DeclareTichu player ->
+        SeeAllCards ->
+            -- fixme!
             model ! []
-            --( updateGame game [ UpdatePlayer declareTichu ], Cmd.none )
 
-        DeclareGrandTichu player ->
+        DeclareGrandTichu ->
+            -- fixme!
             model ! []
-            --( updateGame game [ UpdatePlayer declareGrandTichu ], Cmd.none )
+
+        DeclareTichu ->
+            -- fixme!
+            model ! []
 
         PlaceCombination ->
+            -- fixme!
             model ! []
-            --( updateGame game [ UpdateRound placeCombination ], Cmd.none )
+
+        Pass ->
+            -- fixme!
+            model ! []
 
         Start ->
             model ! case model.awaitingTable of
@@ -266,28 +269,49 @@ awaitingTableView ctx table =
         ]
 
 
+gameButton condition msg title =
+    case condition of
+        True ->
+            button
+                [ class "btn btn-primary"
+                , onClick msg
+                ]
+                [ text title ]
+        False ->
+            div [] []
+
+
 grandTichuButton game player =
-    case player.sawAllCards of
-        True -> div [] []
-        False -> button [ class "btn btn-primary" ] [ text "Grand Tichu" ]
+    gameButton
+        (not player.sawAllCards)
+        DeclareGrandTichu "Grand Tichu"
+
+
+seeAllCardsButton game player =
+    gameButton
+        (not player.sawAllCards)
+        SeeAllCards "See All Cards"
 
 
 tichuButton game player =
-    case player.sawAllCards of
-        True -> div [] []
-        False -> button [ class "btn btn-primary" ] [ text "Tichu" ]
+    gameButton
+        (player.sawAllCards
+        && player.cardsOnHand == 14)
+        DeclareTichu "Tichu"
 
 
-playButton game player =
-    case player.sawAllCards of
-        True -> div [] []
-        False -> button [ class "btn btn-primary" ] [ text "Play" ]
+playButton userName game player =
+    gameButton
+        (player.sawAllCards
+        && (getActualPlayer game.round).name == userName)
+        PlaceCombination "Play"
 
 
-passButton game player =
-    case player.sawAllCards of
-        True -> div [] []
-        False -> button [ class "btn btn-primary" ] [ text "Pass" ]
+passButton userName game player =
+    gameButton
+        (player.sawAllCards
+        && (getActualPlayer game.round).name == userName)
+        Pass "Pass"
 
 
 gameView : Context msg Msg -> String -> List Card -> Game -> Html msg
@@ -305,16 +329,17 @@ gameView ctx userName selection game =
                             , playerGameBox selection "player-left" game 3
                             , div [ class "game-buttons" ]
                                 [ grandTichuButton game player
+                                , seeAllCardsButton game player
                                 , tichuButton game player
-                                , playButton game player
-                                , passButton game player
+                                , playButton userName game player
+                                , passButton userName game player
                                 ]
                             ]
                    ] )
             , gameSummaryPanel game
             ]
         )
-    |> Maybe.withDefault (div [] [ text "" ])
+    |> Maybe.withDefault (div [] [ text <| "Could not find player " ++ userName ])
 
 
 oldTichuView : List Card -> Game -> Html Msg

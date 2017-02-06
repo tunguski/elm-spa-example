@@ -72,40 +72,29 @@ componentSubs ctx component =
 updateModel ctx getter setter model msg =
     let
         cp = getter model
-
-        ( updatedModel, cmd ) =
-            cp.update ctx msg cp.model
+        ( updatedModel, cmd ) = cp.update ctx msg cp.model
     in
         ( setter { cp | model = updatedModel } model, cmd )
 
 
 setPlaceInnerComponent getter setter model place page =
     let
-        cp =
-            getter model
-
-        m =
-            cp.model
+        cp = getter model
+        m = cp.model
     in
         (setter { cp | model = { m | place = page } }
             { model | place = place }
-        )
-            ! []
+        ) ! []
 
 
 setPlace ctx getter model place =
     let
-        cp =
-            getter model
+        cp = getter model
     in
         { model | place = place }
-            ! (case cp.initCmd of
-                Just c ->
-                    [ c ctx ]
-
-                Nothing ->
-                    []
-              )
+        ! (case cp.initCmd of
+            Just c -> [ c ctx ]
+            Nothing -> [])
 
 
 row : List (Html msg) -> Html msg
@@ -136,3 +125,5 @@ multiCellRow cols =
 headerRow : String -> Html msg
 headerRow header =
     div [ class "row header" ] [ h2 [] [ text header ] ]
+
+

@@ -25,7 +25,10 @@ update action model =
         GetSession result ->
             case (Debug.log "getSession" result) of
                 Ok session ->
-                    { model | session = Just session } ! []
+                    { model
+                    | session = Just session
+                    , tableComponent = TableView.component session.username model.tableComponent.model.name
+                    } ! []
 
                 Err error ->
                     { model | session = Nothing } ! []
