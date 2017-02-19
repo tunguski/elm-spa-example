@@ -12,6 +12,7 @@ import Time exposing (Time, every, second, now)
 
 import ClientApi exposing (..)
 import Config exposing (..)
+import Css exposing (..)
 import Component exposing (..)
 import BaseModel exposing (..)
 import Rest exposing (..)
@@ -94,6 +95,9 @@ type Msg
     | Start
     | SentStart (RestResult String)
     | CommandResult (RestResult String)
+    | Exchange1
+    | Exchange2
+    | Exchange3
 
 
 update : ComponentUpdate Model msg Msg
@@ -165,7 +169,6 @@ update ctx action model =
             sendCommand ctx model <|
                 postCommand (model.name ++ "/pass") games
 
-
         -- ExchangeCards
         -- GiveDragon
 
@@ -176,6 +179,16 @@ update ctx action model =
 
         SentStart result ->
             model ! []
+
+        Exchange1 ->
+            model ! []
+
+        Exchange2 ->
+            model ! []
+
+        Exchange3 ->
+            model ! []
+
 
 
 sendCommand ctx model task =
@@ -344,6 +357,11 @@ gameView ctx userName selection game =
                             , playerGameBox selection "player-right" game 1
                             , playerGameBox selection "player-top" game 2
                             , playerGameBox selection "player-left" game 3
+                            , div [ class "card-exchange" ]
+                                [ div [ onClick Exchange1 ] [ text "one" ]
+                                , div [ onClick Exchange2 ] [ text "two" ]
+                                , div [ onClick Exchange3 ] [ text "three" ]
+                                ]
                             , div [ class "game-buttons" ]
                                 [ grandTichuButton game player
                                 , seeAllCardsButton game player
@@ -458,90 +476,5 @@ showPlayer selection actualPlayer ( index, player ) =
         )
             :: printCards player.hand selection
 
-
-
------------------------------------------------------------------------------
--- CSS STYLES
------------------------------------------------------------------------------
-
-
-cssStyle : String
-cssStyle =
-    """
-.card-outer {
-  border: 1px solid grey;
-  border-radius: 7px;
-  display: inline-block;
-  margin: 5px;
-  padding: 3px 5px;
-}
-.card-outer:hover {
-  border-color: blue;
-  background-color: #777;
-  cursor: pointer;
-}
-.selected-True {
-  background-color: #555;
-}
-.suit-mark {
-}
-.suit-mark:after {
-  margin-left: 0.3em;
-}
-.spades:after {
-  content: '♠';
-}
-.hearts:after {
-  content: '♥';
-  color: green;
-}
-.diamonds:after {
-  content: '♦';
-  color: red;
-}
-.clubs:after {
-  content: '♣';
-  color: blue;
-}
-.table-main {
-    position: relative;
-}
-.player-left {
-    position: absolute;
-    display: inline-block;
-    left: 10px;
-    top: 40%;
-}
-.player-right {
-    position: absolute;
-    display: inline-block;
-    right: 10px;
-    top: 40%;
-}
-.player-top {
-    position: absolute;
-    display: inline-block;
-    top: 10px;
-    left: 45%;
-}
-.player-bottom {
-    position: absolute;
-    display: inline-block;
-    bottom: 10px;
-    left: 45%;
-}
-.middle-table {
-    position: absolute;
-    display: inline-block;
-    top: 45%;
-    left: 45%;
-}
-.game-buttons {
-    position: absolute;
-    display: inline-block;
-    left: 10px;
-    bottom: 10px;
-}
-"""
 
 

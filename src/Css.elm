@@ -1,6 +1,107 @@
-module Css exposing (generateCss)
+module Css exposing (..)
 
 import String exposing (concat)
+
+
+-----------------------------------------------------------------------------
+-- CSS STYLES
+-----------------------------------------------------------------------------
+
+
+cssStyle : String
+cssStyle =
+    """
+.card-outer {
+  border: 1px solid grey;
+  border-radius: 7px;
+  display: inline-block;
+  margin: 5px;
+  padding: 3px 5px;
+}
+.card-outer:hover {
+  border-color: blue;
+  background-color: #777;
+  cursor: pointer;
+}
+.selected-True {
+  background-color: #555;
+}
+.suit-mark {
+}
+.suit-mark:after {
+  margin-left: 0.3em;
+}
+.spades:after {
+  content: '♠';
+}
+.hearts:after {
+  content: '♥';
+  color: green;
+}
+.diamonds:after {
+  content: '♦';
+  color: red;
+}
+.clubs:after {
+  content: '♣';
+  color: blue;
+}
+.table-main {
+    position: relative;
+}
+.player-left {
+    position: absolute;
+    display: inline-block;
+    left: 10px;
+    top: 40%;
+}
+.player-right {
+    position: absolute;
+    display: inline-block;
+    right: 10px;
+    top: 40%;
+}
+.player-top {
+    position: absolute;
+    display: inline-block;
+    top: 10px;
+    left: 45%;
+}
+.player-bottom {
+    position: absolute;
+    display: inline-block;
+    bottom: 10px;
+    left: 45%;
+}
+.middle-table {
+    position: absolute;
+    display: inline-block;
+    top: 45%;
+    left: 45%;
+}
+.game-buttons {
+    position: absolute;
+    display: inline-block;
+    left: 10px;
+    bottom: 10px;
+}
+.card-exchange {
+    position: absolute;
+    display: inline-block;
+    top: 45%;
+    left: 35%;
+}
+.card-exchange > div {
+    display: inline-block;
+    padding: 20px;
+    margin: 5px;
+    border: 1px solid black;
+}
+.card-exchange > div:hover {
+    background-color: #ddd;
+}
+"""
+
 
 
 generateCss config =
