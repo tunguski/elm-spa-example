@@ -103,6 +103,12 @@ cssStyle =
 .card-exchange > div:hover {
     background-color: #ddd;
 }
+.cards-on-table {
+    position: absolute;
+    display: inline-block;
+    top: 45%;
+    left: 35%;
+}
 """
 
 

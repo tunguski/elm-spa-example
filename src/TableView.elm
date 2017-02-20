@@ -180,8 +180,10 @@ update ctx action model =
                 postCommand (model.name ++ "/declareTichu") games
 
         PlaceCombination ->
-            sendCommand ctx model <|
-                postCommand (model.name ++ "/hand") games
+            games
+            |> withBody (encodeCards model.selection)
+            |> postCommand (model.name ++ "/hand")
+            |> sendCommand ctx model
 
         Pass ->
             sendCommand ctx model <|
@@ -402,7 +404,11 @@ gameView ctx userName model game =
                             , playerGameBox model.selection "player-left" game 3
                             , case player.exchange of
                                 Just _ ->
-                                    div [] []
+                                    case game.round.table of
+                                        h :: t ->
+                                            div [ class "cards-on-table" ] (printCards h [])
+                                        _ ->
+                                            div [] []
                                 Nothing ->
                                     div [ class "card-exchange" ]
                                       [ div [ onClick Exchange1 ]
