@@ -85,6 +85,9 @@ cssStyle =
     left: 10px;
     bottom: 10px;
 }
+.game-buttons > div {
+    display: inline-block;
+}
 .card-exchange {
     position: absolute;
     display: inline-block;

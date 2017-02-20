@@ -445,7 +445,7 @@ view ctx model =
     , div []
       ((List.map (\table ->
           div [ class "col-md-6" ]
-            [ gameView (Context (always <| ctx.mapMsg Unused)) "testUser" [] table ]
+            [ gameView (Context (always <| ctx.mapMsg Unused)) "testUser" (TableView.model "testUser" "testTable") table ]
         ) model.playerState)
       ++
       (List.map (\table ->

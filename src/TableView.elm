@@ -1,5 +1,6 @@
 module TableView exposing (..)
 
+import Dict exposing (Dict)
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (onInput, onClick)
@@ -11,6 +12,7 @@ import Time exposing (Time, every, second, now)
 
 
 import ClientApi exposing (..)
+import Common exposing (..)
 import Config exposing (..)
 import Css exposing (..)
 import Component exposing (..)
@@ -39,12 +41,14 @@ type alias Model =
     , game : Maybe Game
     , selection : List Card
     , lastFinishedTableUpdate : Maybe Time
+    , exchange : Dict Int Card
     }
 
 
 model : String -> String -> Model
 model userName tableName =
-    Model userName tableName Nothing Nothing [] Nothing
+    Model userName tableName Nothing Nothing
+        [] Nothing (Dict.empty)
 
 
 init : String -> Context msg Msg -> Cmd msg
@@ -95,6 +99,7 @@ type Msg
     | Start
     | SentStart (RestResult String)
     | CommandResult (RestResult String)
+    | Exchange
     | Exchange1
     | Exchange2
     | Exchange3
@@ -140,11 +145,24 @@ update ctx action model =
                     model ! []
 
         CheckCard card ->
-            case List.member card model.selection of
-                True ->
-                    { model | selection = List.filter ((/=) card) model.selection } ! []
-                False ->
-                    { model | selection = card :: model.selection } ! []
+            case model.game of
+                Just game ->
+                    let
+                        player = getPlayer game.round model.userName
+                    in
+                        case player.exchange of
+                            Just _ ->
+                                case List.member card model.selection of
+                                    True ->
+                                        { model | selection = List.filter ((/=) card) model.selection } ! []
+                                    False ->
+                                        { model | selection = card :: model.selection } ! []
+
+                            Nothing ->
+                                { model | selection = [ card ] } ! []
+
+                _ ->
+                    model ! []
 
         CommandResult result ->
             model ! []
@@ -169,7 +187,17 @@ update ctx action model =
             sendCommand ctx model <|
                 postCommand (model.name ++ "/pass") games
 
-        -- ExchangeCards
+        Exchange ->
+            Maybe.map3 (\a b c ->
+                games
+                |> withBody (encodeCards [a, b, c])
+                |> postCommand (model.name ++ "/exchangeCards")
+                |> sendCommand ctx model
+            ) (Dict.get 0 model.exchange)
+              (Dict.get 0 model.exchange)
+              (Dict.get 0 model.exchange)
+            |> Maybe.withDefault (model ! [])
+
         -- GiveDragon
 
         Start ->
@@ -181,14 +209,23 @@ update ctx action model =
             model ! []
 
         Exchange1 ->
-            model ! []
+            exchangeCard model 0 ! []
 
         Exchange2 ->
-            model ! []
+            exchangeCard model 1 ! []
 
         Exchange3 ->
-            model ! []
+            exchangeCard model 2 ! []
 
+
+exchangeCard model index =
+    case model.selection of
+        [ c ] ->
+            Dict.filter (\k v -> v /= c) model.exchange
+            |> Dict.insert index c
+            |> (\d -> { model | exchange = d })
+        _ ->
+            model
 
 
 sendCommand ctx model task =
@@ -217,7 +254,7 @@ view ctx model =
             ++
             case model.game of
                 Just game ->
-                        [ gameView ctx model.userName model.selection game ]
+                        [ gameView ctx model.userName model game ]
                 Nothing ->
                     case model.awaitingTable of
                         Just awaitingTable ->
@@ -344,8 +381,14 @@ passButton userName game player =
         Pass "Pass"
 
 
-gameView : Context msg Msg -> String -> List Card -> Game -> Html msg
-gameView ctx userName selection game =
+exchangeButton userName game player =
+    gameButton
+        (player.sawAllCards && isNothing player.exchange)
+        Exchange "Exchange"
+
+
+gameView : Context msg Msg -> String -> Model -> Game -> Html msg
+gameView ctx userName model game =
     List.filter (.name >> (==) userName) game.round.players
     |> List.head
     |> Maybe.map (\player ->
@@ -353,21 +396,29 @@ gameView ctx userName selection game =
             [ chatPanel game
             , ( 8, [ Html.map ctx.mapMsg <|
                         div [ class "table-main" ]
-                            [ playerGameBox selection "player-bottom" game 0
-                            , playerGameBox selection "player-right" game 1
-                            , playerGameBox selection "player-top" game 2
-                            , playerGameBox selection "player-left" game 3
-                            , div [ class "card-exchange" ]
-                                [ div [ onClick Exchange1 ] [ text "one" ]
-                                , div [ onClick Exchange2 ] [ text "two" ]
-                                , div [ onClick Exchange3 ] [ text "three" ]
-                                ]
+                            [ playerGameBox model.selection "player-bottom" game 0
+                            , playerGameBox model.selection "player-right" game 1
+                            , playerGameBox model.selection "player-top" game 2
+                            , playerGameBox model.selection "player-left" game 3
+                            , case player.exchange of
+                                Just _ ->
+                                    div [] []
+                                Nothing ->
+                                    div [ class "card-exchange" ]
+                                      [ div [ onClick Exchange1 ]
+                                          (printExchangeCard model 0)
+                                      , div [ onClick Exchange2 ]
+                                          (printExchangeCard model 1)
+                                      , div [ onClick Exchange3 ]
+                                          (printExchangeCard model 2)
+                                      ]
                             , div [ class "game-buttons" ]
                                 [ grandTichuButton game player
                                 , seeAllCardsButton game player
                                 , tichuButton game player
                                 , playButton userName game player
                                 , passButton userName game player
+                                , exchangeButton userName game player
                                 ]
                             ]
                    ] )
@@ -375,6 +426,15 @@ gameView ctx userName selection game =
             ]
         )
     |> Maybe.withDefault (div [] [ text <| "Could not find player " ++ userName ])
+
+
+printExchangeCard model index =
+    [ case Dict.get index model.exchange of
+        Just c ->
+            printCardSkeleton c
+        _ ->
+            text ""
+    ]
 
 
 oldTichuView : List Card -> Game -> Html Msg
