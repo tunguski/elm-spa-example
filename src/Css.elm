@@ -109,6 +109,12 @@ cssStyle =
     top: 45%;
     left: 35%;
 }
+.actual-player {
+    background-color: blue;
+}
+.table-hand-owner {
+    background-color: yellow;
+}
 """
 
 

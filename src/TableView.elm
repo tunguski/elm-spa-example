@@ -183,7 +183,17 @@ update ctx action model =
             games
             |> withBody (encodeCards model.selection)
             |> postCommand (model.name ++ "/hand")
-            |> sendCommand ctx model
+            |> sendCommand ctx
+            { model
+            | selection = []
+            , game = Maybe.map (\game ->
+                { game | round =
+                    modifyPlayer model.userName (\player ->
+                        { player | hand = removeCards model.selection player.hand })
+                    game.round
+                }
+            ) model.game
+            }
 
         Pass ->
             sendCommand ctx model <|
@@ -280,9 +290,26 @@ playerGameBox selection className game index =
     case List.drop index game.round.players |> List.head of
         Just player ->
             div [ class className ] <|
-                printTableHand selection player.hand
+                (case player.hand of
+                    [] ->
+                        printHiddenCards player
+                    _ ->
+                        printTableHand selection player.hand
+                )
                 ++
-                [ text player.name
+                [ case game.round.actualPlayer == index of
+                    True ->
+                        span [ class "actual-player" ] [ text player.name ]
+                    False ->
+                        case game.round.tableHandOwner of
+                            Just i ->
+                                if i == index then
+                                    span [ class "table-hand-owner" ]
+                                        [ text player.name ]
+                                else
+                                    text player.name
+                            _ ->
+                                text player.name
                 ]
         _ ->
             div [ class className ] [ text "error" ]
@@ -509,6 +536,11 @@ printTableHand : List Card -> List Card -> List (Html Msg)
 printTableHand selection cards =
     printCards (List.sortWith cardOrder cards) selection
 
+
+printHiddenCards : Player -> List (Html Msg)
+printHiddenCards player =
+    List.repeat player.cardsOnHand
+        (div [ class "card-outer" ] [ text "?" ])
 
 
 showRound : List Card -> Round -> Html Msg
