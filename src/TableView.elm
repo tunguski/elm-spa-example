@@ -151,11 +151,14 @@ update ctx action model =
                     in
                         case player.exchange of
                             Just _ ->
-                                case List.member card model.selection of
-                                    True ->
-                                        { model | selection = List.filter ((/=) card) model.selection } ! []
-                                    False ->
-                                        { model | selection = card :: model.selection } ! []
+                                { model | selection =
+                                    List.sortWith cardOrder <|
+                                        case List.member card model.selection of
+                                            True ->
+                                                List.filter ((/=) card) model.selection
+                                            False ->
+                                                card :: model.selection
+                                } ! []
 
                             Nothing ->
                                 { model | selection = [ card ] } ! []
@@ -208,8 +211,6 @@ update ctx action model =
               (Dict.get 1 model.exchange)
               (Dict.get 2 model.exchange)
             |> Maybe.withDefault (model ! [])
-
-        -- GiveDragon
 
         Start ->
             model ! case model.awaitingTable of
