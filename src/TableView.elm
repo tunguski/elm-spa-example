@@ -100,9 +100,8 @@ type Msg
     | SentStart (RestResult String)
     | CommandResult (RestResult String)
     | Exchange
-    | Exchange1
-    | Exchange2
-    | Exchange3
+    | SetExchange Int
+    | PlayerClicked String
 
 
 update : ComponentUpdate Model msg Msg
@@ -204,10 +203,10 @@ update ctx action model =
                 games
                 |> withBody (encodeCards [a, b, c])
                 |> postCommand (model.name ++ "/exchangeCards")
-                |> sendCommand ctx model
+                |> sendCommand ctx { model | selection = [] }
             ) (Dict.get 0 model.exchange)
-              (Dict.get 0 model.exchange)
-              (Dict.get 0 model.exchange)
+              (Dict.get 1 model.exchange)
+              (Dict.get 2 model.exchange)
             |> Maybe.withDefault (model ! [])
 
         -- GiveDragon
@@ -220,14 +219,30 @@ update ctx action model =
         SentStart result ->
             model ! []
 
-        Exchange1 ->
-            exchangeCard model 0 ! []
+        SetExchange i ->
+            exchangeCard model i ! []
 
-        Exchange2 ->
-            exchangeCard model 1 ! []
+        PlayerClicked name ->
+            case model.game of
+                Just game ->
+                    if (getActualPlayer game.round).name == model.userName &&
+                       case List.head game.round.table of
+                           Just [ Dragon ] -> True
+                           _ -> False
+                    then
+                        case isNextOpponent game.round model.userName name of
+                            Just b ->
+                                games
+                                |> withBody (if b then "next" else "previous")
+                                |> postCommand (model.name ++ "/giveDragon")
+                                |> sendCommand ctx model
+                            _ ->
+                                model ! []
+                    else
+                        model ! []
 
-        Exchange3 ->
-            exchangeCard model 2 ! []
+                Nothing ->
+                    model ! []
 
 
 exchangeCard model index =
@@ -289,7 +304,9 @@ playerGameBox : List Card -> String -> Game -> Int -> Html Msg
 playerGameBox selection className game index =
     case List.drop index game.round.players |> List.head of
         Just player ->
-            div [ class className ] <|
+            div [ class className
+                , onClick (PlayerClicked player.name)
+                ] <|
                 (case player.hand of
                     [] ->
                         printHiddenCards player
@@ -437,14 +454,17 @@ gameView ctx userName model game =
                                         _ ->
                                             div [] []
                                 Nothing ->
-                                    div [ class "card-exchange" ]
-                                      [ div [ onClick Exchange1 ]
-                                          (printExchangeCard model 0)
-                                      , div [ onClick Exchange2 ]
-                                          (printExchangeCard model 1)
-                                      , div [ onClick Exchange3 ]
-                                          (printExchangeCard model 2)
-                                      ]
+                                    if player.sawAllCards then
+                                        div [ class "card-exchange" ]
+                                          [ div [ onClick (SetExchange 0) ]
+                                              (printExchangeCard model 0)
+                                          , div [ onClick (SetExchange 1) ]
+                                              (printExchangeCard model 1)
+                                          , div [ onClick (SetExchange 2) ]
+                                              (printExchangeCard model 2)
+                                          ]
+                                    else
+                                        div [] []
                             , div [ class "game-buttons" ]
                                 [ grandTichuButton game player
                                 , seeAllCardsButton game player
@@ -539,8 +559,8 @@ printTableHand selection cards =
 
 printHiddenCards : Player -> List (Html Msg)
 printHiddenCards player =
-    List.repeat player.cardsOnHand
-        (div [ class "card-outer" ] [ text "?" ])
+        [ div [ class "card-outer" ] [ text (toString <|
+            if player.sawAllCards then player.cardsOnHand else 8) ] ]
 
 
 showRound : List Card -> Round -> Html Msg

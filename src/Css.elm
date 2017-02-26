@@ -48,6 +48,7 @@ cssStyle =
 }
 .table-main {
     position: relative;
+    zoom: 120%;
 }
 .player-left {
     position: absolute;
@@ -110,10 +111,12 @@ cssStyle =
     left: 35%;
 }
 .actual-player {
-    background-color: blue;
+    border: 2px solid blue;
+    padding: 5px;
 }
 .table-hand-owner {
-    background-color: yellow;
+    border: 2px solid yellow;
+    padding: 5px;
 }
 """
 
