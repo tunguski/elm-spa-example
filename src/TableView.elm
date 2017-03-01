@@ -4,8 +4,10 @@ import Dict exposing (Dict)
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (onInput, onClick)
+import Murmur3
 import Navigation
 import Json.Decode as Json exposing (..)
+import Process
 import Result exposing (toMaybe)
 import Task exposing (Task)
 import Time exposing (Time, every, second, now)
@@ -28,7 +30,7 @@ component userName tableName =
         update
         view
         (Just (init tableName))
-        (Just subs)
+        Nothing
 
 
 -- MODEL
@@ -62,14 +64,18 @@ init name ctx =
     |> Cmd.map ctx.mapMsg
 
 
-getTable : String -> Context msg Msg -> Cmd msg
-getTable name ctx =
+--getTable : String -> Int -> Context msg Msg -> Cmd msg
+getTable name hash ctx =
     Task.map2
         (,)
         now
-        (get name games |> Task.map Err)
-    |> Task.attempt UpdateTables
-    |> Cmd.map ctx.mapMsg
+        (games
+         |> withQueryParams [ ("hash", toString hash) ]
+         |> get name
+         |> Task.map Err
+        )
+    --|> Task.attempt UpdateTables
+    --|> Cmd.map ctx.mapMsg
 
 
 startGame : String -> (RestResult String -> msg) -> Cmd msg
@@ -78,18 +84,11 @@ startGame name msg =
     |> Task.attempt msg
 
 
-subs : Context msg Msg -> model -> Sub msg
-subs ctx model =
-    every second CheckUpdate
-        |> Sub.map ctx.mapMsg
-
-
 -- UPDATE
 
 
 type Msg
     = UpdateTables (RestResult (Time, Result Game AwaitingTable))
-    | CheckUpdate Time
     | CheckCard Card
     | DeclareTichu
     | DeclareGrandTichu
@@ -123,22 +122,23 @@ update ctx action model =
                                 { newModel | awaitingTable = Just awaitingTable } ! []
 
                             Err game ->
-                                { newModel | game = Just game } ! []
-
-                _ ->
-                    model ! []
-
-        CheckUpdate time ->
-            case model.lastFinishedTableUpdate of
-                Just last ->
-                    if last + (3 * second) < time then
-                        { model | lastFinishedTableUpdate = Nothing }
-                            ! [ case model.game of
-                                    Just _ -> getTable model.name ctx
-                                    _ -> init model.name ctx
-                              ]
-                    else
-                        model ! []
+                                { newModel | game = Just game } ! (
+                                    let
+                                        gameHashBase =
+                                            { game
+                                            | users = List.map (\user ->
+                                                { user
+                                                | lastCheck = 0
+                                                }) game.users
+                                            }
+                                        hash = Murmur3.hashString 17 (toString gameHashBase)
+                                    in
+                                        [ Process.sleep 500.0
+                                          |> Task.andThen (\_ -> getTable model.name hash ctx)
+                                          |> Task.attempt UpdateTables
+                                          |> Cmd.map ctx.mapMsg
+                                        ]
+                                )
 
                 _ ->
                     model ! []
