@@ -218,7 +218,11 @@ update ctx action model =
                         _ -> []
 
         SentStart result ->
-            model ! []
+            model !
+                [ getTable model.name 0 ctx
+                  |> Task.attempt UpdateTables
+                  |> Cmd.map ctx.mapMsg
+                ]
 
         SetExchange i ->
             exchangeCard model i ! []
