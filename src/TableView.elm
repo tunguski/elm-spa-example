@@ -206,7 +206,10 @@ update ctx action model =
                 games
                 |> withBody (encodeCards [a, b, c])
                 |> postCommand (model.name ++ "/exchangeCards")
-                |> sendCommand ctx { model | selection = [] }
+                |> sendCommand ctx { model
+                    | selection = []
+                    , exchange = Dict.empty
+                }
             ) (Dict.get 0 model.exchange)
               (Dict.get 1 model.exchange)
               (Dict.get 2 model.exchange)
@@ -255,7 +258,10 @@ exchangeCard model index =
         [ c ] ->
             Dict.filter (\k v -> v /= c) model.exchange
             |> Dict.insert index c
-            |> (\d -> { model | exchange = d })
+            |> (\d -> { model
+                | exchange = d
+                , selection = []
+            })
         _ ->
             model
 
@@ -421,6 +427,7 @@ tichuButton game player =
 playButton userName game player =
     gameButton
         (player.sawAllCards
+        && not (isNothing player.exchange)
         && (getActualPlayer game.round).name == userName)
         PlaceCombination "Play"
 
@@ -428,6 +435,7 @@ playButton userName game player =
 passButton userName game player =
     gameButton
         (player.sawAllCards
+        && not (isNothing player.exchange)
         && (getActualPlayer game.round).name == userName)
         Pass "Pass"
 
