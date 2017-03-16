@@ -182,20 +182,28 @@ update ctx action model =
                 postCommand (model.name ++ "/declareTichu") games
 
         PlaceCombination ->
-            games
-            |> withBody (encodeCards model.selection)
-            |> postCommand (model.name ++ "/hand")
-            |> sendCommand ctx
-            { model
-            | selection = []
-            , game = Maybe.map (\game ->
-                { game | round =
-                    modifyPlayer model.userName (\player ->
-                        { player | hand = removeCards model.selection player.hand })
-                    game.round
-                }
-            ) model.game
-            }
+            case model.game of
+                Just game ->
+                    case allowedCombination game.round.table model.selection of
+                        True ->
+                            games
+                            |> withBody (encodeCards model.selection)
+                            |> postCommand (model.name ++ "/hand")
+                            |> sendCommand ctx
+                            { model
+                            | selection = []
+                            , game = Maybe.map (\game ->
+                                { game | round =
+                                    modifyPlayer model.userName (\player ->
+                                        { player | hand = removeCards model.selection player.hand })
+                                    game.round
+                                }
+                            ) model.game
+                            }
+                        False ->
+                            { model | selection = [] } ! []
+                Nothing ->
+                    model ! []
 
         Pass ->
             sendCommand ctx model <|
@@ -358,11 +366,12 @@ gameSummaryPanel game =
     ( 2
     , [ div [ class "table-options" ]
           [ div [ class "table-options-header" ] [ text "Game" ]
-          , case game.history of
-              [] ->
-                  div [] []
-              history ->
-                  div [] [ text <| toString <| calculateHistoryPoints history ]
+          , div [] [ text <| toString <| calculateTeamPoints game.history ]
+          , div []
+                (calculateHistoryPoints game.history
+                |> List.map (\v ->
+                    div [] [ text <| toString v ]
+                ))
           ]
       ]
     )
@@ -412,7 +421,8 @@ gameButton condition msg title =
 
 grandTichuButton game player =
     gameButton
-        (not player.sawAllCards)
+        (not player.sawAllCards
+        && not player.grandTichu)
         DeclareGrandTichu "Grand Tichu"
 
 
@@ -425,7 +435,8 @@ seeAllCardsButton game player =
 tichuButton game player =
     gameButton
         (player.sawAllCards
-        && player.cardsOnHand == 14)
+        && player.cardsOnHand == 14
+        && not player.tichu)
         DeclareTichu "Tichu"
 
 
@@ -441,7 +452,8 @@ passButton userName game player =
     gameButton
         (player.sawAllCards
         && not (isNothing player.exchange)
-        && (getActualPlayer game.round).name == userName)
+        && ((getActualPlayer game.round).name == userName
+            && not (List.isEmpty game.round.table)))
         Pass "Pass"
 
 
