@@ -354,10 +354,15 @@ chatPanel chatData =
     )
 
 
-gameSummaryPanel gameSummary =
+gameSummaryPanel game =
     ( 2
     , [ div [ class "table-options" ]
           [ div [ class "table-options-header" ] [ text "Game" ]
+          , case game.history of
+              [] ->
+                  div [] []
+              history ->
+                  div [] [ text <| toString <| calculateHistoryPoints history ]
           ]
       ]
     )
@@ -389,7 +394,7 @@ awaitingTableView ctx table =
                   |> Maybe.withDefault (div [] [])
                 ]
                ] )
-        , gameSummaryPanel ()
+        --, gameSummaryPanel table
         ]
 
 
