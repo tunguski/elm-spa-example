@@ -42,40 +42,30 @@ type alias Model =
     , awaitingTable : Maybe AwaitingTable
     , game : Maybe Game
     , selection : List Card
-    , lastFinishedTableUpdate : Maybe Time
     , exchange : Dict Int Card
     }
 
 
 model : String -> String -> Model
 model userName tableName =
-    Model userName tableName Nothing Nothing
-        [] Nothing (Dict.empty)
+    Model userName tableName Nothing Nothing [] (Dict.empty)
 
 
 init : String -> Context msg Msg -> Cmd msg
 init name ctx =
-    Task.map2
-        (,)
-        now
-        ((get name awaitingTables|> Task.map Ok)
-         |> Task.onError (\error -> get name games |> Task.map Err))
+    (get name awaitingTables |> Task.map Ok)
+    |> Task.onError (\error -> get name games |> Task.map Err)
     |> Task.attempt UpdateTables
     |> Cmd.map ctx.mapMsg
 
 
 --getTable : String -> Int -> Context msg Msg -> Cmd msg
 getTable name hash ctx =
-    Task.map2
-        (,)
-        now
-        (games
-         |> withQueryParams [ ("hash", toString hash) ]
-         |> get name
-         |> Task.map Err
-        )
-    --|> Task.attempt UpdateTables
-    --|> Cmd.map ctx.mapMsg
+    games
+    |> withQueryParams [ ("hash", toString hash) ]
+    |> get name
+    |> Task.map Err
+
 
 
 startGame : String -> (RestResult String -> msg) -> Cmd msg
@@ -88,7 +78,7 @@ startGame name msg =
 
 
 type Msg
-    = UpdateTables (RestResult (Time, Result Game AwaitingTable))
+    = UpdateTables (RestResult (Result Game AwaitingTable))
     | CheckCard Card
     | DeclareTichu
     | DeclareGrandTichu
@@ -107,41 +97,46 @@ update : ComponentUpdate Model msg Msg
 update ctx action model =
     case action of
         UpdateTables result ->
-            case result of
-                Ok ( time, res ) ->
+            let
+                sendGetGame game =
                     let
-                        newModel =
-                            { model
-                                | game = Nothing
-                                , awaitingTable = Nothing
-                                , lastFinishedTableUpdate = Just time
+                        gameHashBase =
+                            { game
+                            | users = List.map (\user ->
+                                { user
+                                | lastCheck = 0
+                                }) game.users
                             }
+                        hash = Murmur3.hashString 17 (toString gameHashBase)
                     in
-                        case res of
-                            Ok awaitingTable ->
-                                { newModel | awaitingTable = Just awaitingTable } ! []
+                        [ Process.sleep 500.0
+                          |> Task.andThen (\_ -> getTable model.name hash ctx)
+                          |> Task.attempt UpdateTables
+                          |> Cmd.map ctx.mapMsg
+                        ]
+            in
+                case result of
+                    Ok res ->
+                        let
+                            newModel =
+                                { model
+                                    | game = Nothing
+                                    , awaitingTable = Nothing
+                                }
+                        in
+                            case res of
+                                Ok awaitingTable ->
+                                    { newModel | awaitingTable = Just awaitingTable } ! []
 
-                            Err game ->
-                                { newModel | game = Just game } ! (
-                                    let
-                                        gameHashBase =
-                                            { game
-                                            | users = List.map (\user ->
-                                                { user
-                                                | lastCheck = 0
-                                                }) game.users
-                                            }
-                                        hash = Murmur3.hashString 17 (toString gameHashBase)
-                                    in
-                                        [ Process.sleep 500.0
-                                          |> Task.andThen (\_ -> getTable model.name hash ctx)
-                                          |> Task.attempt UpdateTables
-                                          |> Cmd.map ctx.mapMsg
-                                        ]
-                                )
+                                Err game ->
+                                    { newModel | game = Just game } ! (sendGetGame game)
 
-                _ ->
-                    model ! []
+                    _ ->
+                        case model.game of
+                            Just game ->
+                                model ! (sendGetGame game)
+                            Nothing ->
+                                model ! []
 
         CheckCard card ->
             case model.game of
