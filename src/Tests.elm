@@ -4,7 +4,7 @@ import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (onInput, onClick)
 import Navigation
-import Json.Decode as Json exposing (decodeString)
+import Json.Decode as Json
 import Result exposing (toMaybe)
 import Random
 import Task exposing (..)

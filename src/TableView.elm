@@ -42,13 +42,14 @@ type alias Model =
     , awaitingTable : Maybe AwaitingTable
     , game : Maybe Game
     , selection : List Card
+    , demand : Maybe Rank
     , exchange : Dict Int Card
     }
 
 
 model : String -> String -> Model
 model userName tableName =
-    Model userName tableName Nothing Nothing [] (Dict.empty)
+    Model userName tableName Nothing Nothing [] Nothing (Dict.empty)
 
 
 init : String -> Context msg Msg -> Cmd msg
@@ -84,6 +85,7 @@ type Msg
     | DeclareGrandTichu
     | MahJongRequest (Maybe Rank)
     | PlaceCombination
+    | SendHand (RestResult String)
     | Pass
     | SeeAllCards
     | Start
@@ -178,13 +180,27 @@ update ctx action model =
                 postCommand (model.name ++ "/declareTichu") games
 
         MahJongRequest demand ->
+            { model | demand = demand } ! []
+
+        SendHand result ->
             case model.game of
                 Just game ->
-                    let
-                        round = game.round
-                    in
-                        { model | game = Just { game | round = { round | demand = demand } } } ! []
-                _ ->
+                    games
+                    |> withBody (encodeCards model.selection)
+                    |> postCommand (model.name ++ "/hand")
+                    |> sendCommand ctx
+                    { model
+                    | selection = []
+                    , demand = Nothing
+                    , game = Maybe.map (\game ->
+                        { game | round =
+                            modifyPlayer model.userName (\player ->
+                                { player | hand = removeCards model.selection player.hand })
+                            game.round
+                        }
+                    ) model.game
+                    }
+                Nothing ->
                     model ! []
 
         PlaceCombination ->
@@ -192,22 +208,17 @@ update ctx action model =
                 Just game ->
                     case allowedCombination game.round.table model.selection of
                         True ->
-                            games
-                            |> withBody (encodeCards model.selection)
-                            |> postCommand (model.name ++ "/hand")
-                            |> sendCommand ctx
-                            { model
-                            | selection = []
-                            , game = Maybe.map (\game ->
-                                { game | round =
-                                    modifyPlayer model.userName (\player ->
-                                        { player | hand = removeCards model.selection player.hand })
-                                    game.round
-                                }
-                            ) model.game
-                            }
+                            case (List.member MahJong model.selection, model.demand) of
+                                (True, Just rank) ->
+                                    games
+                                    |> withBody (encode rankEncoder rank)
+                                    |> postCommand (model.name ++ "/demandRank")
+                                    |> sendCustomCommand SendHand ctx
+                                    model
+                                _ ->
+                                    update ctx (SendHand (Ok "")) model
                         False ->
-                            { model | selection = [] } ! []
+                            { model | selection = [], demand = Nothing } ! []
                 Nothing ->
                     model ! []
 
@@ -284,6 +295,14 @@ sendCommand ctx model task =
     model ! [
         task
         |> Task.attempt CommandResult
+        |> Cmd.map ctx.mapMsg
+    ]
+
+
+sendCustomCommand cmd ctx model task =
+    model ! [
+        task
+        |> Task.attempt cmd
         |> Cmd.map ctx.mapMsg
     ]
 
@@ -494,7 +513,7 @@ gameView ctx userName model game =
                                     ) allowedRanks)
                                     |> List.map (\(title, value) ->
                                         div [ class ("btn btn-default" ++
-                                                if game.round.demand == value then
+                                                if model.demand == value then
                                                     " active"
                                                 else
                                                     ""
