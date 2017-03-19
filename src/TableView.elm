@@ -82,6 +82,7 @@ type Msg
     | CheckCard Card
     | DeclareTichu
     | DeclareGrandTichu
+    | MahJongRequest (Maybe Rank)
     | PlaceCombination
     | Pass
     | SeeAllCards
@@ -175,6 +176,16 @@ update ctx action model =
         DeclareTichu ->
             sendCommand ctx model <|
                 postCommand (model.name ++ "/declareTichu") games
+
+        MahJongRequest demand ->
+            case model.game of
+                Just game ->
+                    let
+                        round = game.round
+                    in
+                        { model | game = Just { game | round = { round | demand = demand } } } ! []
+                _ ->
+                    model ! []
 
         PlaceCombination ->
             case model.game of
@@ -471,6 +482,29 @@ gameView ctx userName model game =
                             , playerGameBox model.selection "player-right" game 1
                             , playerGameBox model.selection "player-top" game 2
                             , playerGameBox model.selection "player-left" game 3
+                            , case List.member MahJong model.selection of
+                                True ->
+                                    ("N", Nothing) :: (List.map (\rank ->
+                                        (case rank of
+                                           R i -> toString i
+                                           a -> toString a
+                                        , Just rank
+                                        )
+
+                                    ) allowedRanks)
+                                    |> List.map (\(title, value) ->
+                                        div [ class ("btn btn-default" ++
+                                                if game.round.demand == value then
+                                                    " active"
+                                                else
+                                                    ""
+                                                )
+                                            , onClick (MahJongRequest value)
+                                            ] [ text title ]
+                                    )
+                                    |> div [ class "btn-group mahjong-demand"]
+                                False ->
+                                    div [] []
                             , case player.exchange of
                                 Just _ ->
                                     case game.round.table of

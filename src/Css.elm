@@ -50,6 +50,10 @@ cssStyle =
     position: relative;
     zoom: 120%;
 }
+.mahjong-demand {
+    position: absolute;
+    top: 60px;
+}
 .player-left {
     position: absolute;
     display: inline-block;
