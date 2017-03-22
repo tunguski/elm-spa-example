@@ -501,8 +501,8 @@ gameView ctx userName model game =
                             , playerGameBox model.selection "player-right" game 1
                             , playerGameBox model.selection "player-top" game 2
                             , playerGameBox model.selection "player-left" game 3
-                            , case List.member MahJong model.selection of
-                                True ->
+                            , case (List.member MahJong model.selection, player.exchange) of
+                                (True, Just a) ->
                                     ("N", Nothing) :: (List.map (\rank ->
                                         (case rank of
                                            R i -> toString i
@@ -522,7 +522,7 @@ gameView ctx userName model game =
                                             ] [ text title ]
                                     )
                                     |> div [ class "btn-group mahjong-demand"]
-                                False ->
+                                _ ->
                                     div [] []
                             , case player.exchange of
                                 Just _ ->
