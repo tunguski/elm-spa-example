@@ -214,7 +214,7 @@ update ctx action model =
         PlaceCombination ->
             case model.game of
                 Just game ->
-                    case allowedCombination game.round.table model.selection of
+                    case not <| List.isEmpty model.possibilities of
                         True ->
                             case (List.member MahJong model.selection, model.demand) of
                                 (True, Just rank) ->
@@ -267,10 +267,7 @@ update ctx action model =
         PlayerClicked name ->
             case model.game of
                 Just game ->
-                    if (getActualPlayer game.round).name == model.userName &&
-                       case List.head game.round.table of
-                           Just [ Dragon ] -> True
-                           _ -> False
+                    if isGivingDragon model game
                     then
                         case isNextOpponent game.round model.userName name of
                             Just b ->
@@ -285,6 +282,13 @@ update ctx action model =
 
                 Nothing ->
                     model ! []
+
+
+isGivingDragon model game =
+    (getActualPlayer game.round).name == model.userName
+    && case List.head game.round.table of
+        Just [ Dragon ] -> True
+        _ -> False
 
 
 clearSelection model =
@@ -585,9 +589,13 @@ gameView ctx userName model game =
                                     |> div [ class "btn-group mahjong-demand"]
                                 _ ->
                                     div [] []
-                            , case List.length model.possibilities > 1 of
-                                True ->
-                                    div [] <|
+                            , case model.possibilities of
+                                [] ->
+                                    div [] []
+                                [ p ] ->
+                                    div [] [ text (toString p) ]
+                                _ ->
+                                    div [ class "btn-group phoenix-meaning" ] <|
                                         List.map (\possibility ->
                                             div [ class ("btn btn-default" ++ (
                                                     model.phoenixMeaning
@@ -604,8 +612,11 @@ gameView ctx userName model game =
                                                 ]
                                                 [ text (toString possibility) ]
                                         ) model.possibilities
-                                False ->
-                                    div [] []
+                            , if isGivingDragon model game
+                              then
+                                  div [] [ text "Give the Dragon" ]
+                              else
+                                  div [] []
                             , case player.exchange of
                                 Just _ ->
                                     case game.round.table of
