@@ -500,8 +500,9 @@ gameButton condition msg title =
                 , onClick msg
                 ]
                 [ text title ]
+            |> Just
         False ->
-            div [] []
+            Nothing
 
 
 grandTichuButton game player =
@@ -525,11 +526,12 @@ tichuButton game player =
         DeclareTichu "Tichu"
 
 
-playButton userName game player =
+playButton userName game player model =
     gameButton
         (player.sawAllCards
         && not (isNothing player.exchange)
-        && (getActualPlayer game.round).name == userName)
+        && (getActualPlayer game.round).name == userName
+        && (not <| List.isEmpty model.possibilities))
         PlaceCombination "Play"
 
 
@@ -612,11 +614,15 @@ gameView ctx userName model game =
                                                 ]
                                                 [ text (toString possibility) ]
                                         ) model.possibilities
-                            , if isGivingDragon model game
-                              then
+                            , if isGivingDragon model game then
                                   div [] [ text "Give the Dragon" ]
                               else
                                   div [] []
+                            , case (game.round.demand, game.round.demandCompleted) of
+                                (Just r, False) ->
+                                    div [] [ text ("Open demand for " ++ toString r) ]
+                                _ ->
+                                    div [] []
                             , case player.exchange of
                                 Just _ ->
                                     case game.round.table of
@@ -636,11 +642,12 @@ gameView ctx userName model game =
                                           ]
                                     else
                                         div [] []
-                            , div [ class "game-buttons" ]
+                            , div [ class "game-buttons" ] <|
+                                List.filterMap identity
                                 [ grandTichuButton game player
                                 , seeAllCardsButton game player
                                 , tichuButton game player
-                                , playButton userName game player
+                                , playButton userName game player model
                                 , passButton userName game player
                                 , exchangeButton userName game player
                                 ]
