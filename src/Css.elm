@@ -25,6 +25,10 @@ cssStyle =
 }
 .selected-True {
   background-color: #555;
+  border-color: red;
+}
+.proper-combination .selected-True {
+  border-color: green;
 }
 .suit-mark {
 }
@@ -393,3 +397,5 @@ h1, .h1, h2, .h2, h3, .h3 {
 }
 
 """ ]
+
+

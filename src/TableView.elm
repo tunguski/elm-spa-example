@@ -42,6 +42,8 @@ type alias Model =
     , awaitingTable : Maybe AwaitingTable
     , game : Maybe Game
     , selection : List Card
+    , possibilities : List Combination
+    , phoenixMeaning : Maybe String
     , demand : Maybe Rank
     , exchange : Dict Int Card
     }
@@ -49,7 +51,7 @@ type alias Model =
 
 model : String -> String -> Model
 model userName tableName =
-    Model userName tableName Nothing Nothing [] Nothing (Dict.empty)
+    Model userName tableName Nothing Nothing [] [] Nothing Nothing (Dict.empty)
 
 
 init : String -> Context msg Msg -> Cmd msg
@@ -84,6 +86,7 @@ type Msg
     | DeclareTichu
     | DeclareGrandTichu
     | MahJongRequest (Maybe Rank)
+    | ChoosePhoenixMeaning String
     | PlaceCombination
     | SendHand (RestResult String)
     | Pass
@@ -149,17 +152,17 @@ update ctx action model =
                     in
                         case player.exchange of
                             Just _ ->
-                                { model | selection =
+                                setSelection model game (
                                     List.sortWith cardOrder <|
                                         case List.member card model.selection of
                                             True ->
                                                 List.filter ((/=) card) model.selection
                                             False ->
                                                 card :: model.selection
-                                } ! []
+                                ) ! []
 
                             Nothing ->
-                                { model | selection = [ card ] } ! []
+                                setSelection model game [ card ] ! []
 
                 _ ->
                     model ! []
@@ -182,6 +185,9 @@ update ctx action model =
         MahJongRequest demand ->
             { model | demand = demand } ! []
 
+        ChoosePhoenixMeaning phoenixMeaning ->
+            { model | phoenixMeaning = Just phoenixMeaning } ! []
+
         SendHand result ->
             case model.game of
                 Just game ->
@@ -189,9 +195,9 @@ update ctx action model =
                     |> withBody (encodeCards model.selection)
                     |> postCommand (model.name ++ "/hand")
                     |> sendCommand ctx
+                    (
                     { model
-                    | selection = []
-                    , demand = Nothing
+                    | demand = Nothing
                     , game = Maybe.map (\game ->
                         { game | round =
                             modifyPlayer model.userName (\player ->
@@ -200,6 +206,8 @@ update ctx action model =
                         }
                     ) model.game
                     }
+                    |> clearSelection
+                    )
                 Nothing ->
                     model ! []
 
@@ -218,7 +226,7 @@ update ctx action model =
                                 _ ->
                                     update ctx (SendHand (Ok "")) model
                         False ->
-                            { model | selection = [], demand = Nothing } ! []
+                            clearSelection { model | demand = Nothing } ! []
                 Nothing ->
                     model ! []
 
@@ -233,6 +241,7 @@ update ctx action model =
                 |> postCommand (model.name ++ "/exchangeCards")
                 |> sendCommand ctx { model
                     | selection = []
+                    , possibilities = []
                     , exchange = Dict.empty
                 }
             ) (Dict.get 0 model.exchange)
@@ -278,6 +287,52 @@ update ctx action model =
                     model ! []
 
 
+clearSelection model =
+    { model
+    | selection = []
+    , possibilities = []
+    , phoenixMeaning = Nothing
+    }
+
+
+setSelection model game selection =
+    { model
+    | selection =
+        List.sortWith cardOrder selection
+    , possibilities =
+        case List.member Phoenix selection of
+            True ->
+                let
+                    noMahjong = removeCards [ Phoenix ] selection
+                    versions = List.range 0 (List.length noMahjong)
+                in
+                    versions
+                    |> List.map (\i ->
+                        let
+                            permutation =
+                                (List.take i noMahjong
+                                 ++ [ Phoenix ]
+                                 ++ List.drop i noMahjong)
+                        in
+                            permutation
+                            |> allowedCombination game.round.table
+                            |> (\isAllowed ->
+                                case isAllowed of
+                                    True -> parseTrick permutation
+                                    False -> Nothing
+                            )
+                    )
+                    |> List.filterMap identity
+            False ->
+                case allowedCombination game.round.table selection of
+                    True ->
+                        [ parseTrick selection ]
+                        |> List.filterMap identity
+                    False -> []
+    , phoenixMeaning = Nothing
+    }
+
+
 exchangeCard model index =
     case model.selection of
         [ c ] ->
@@ -286,6 +341,7 @@ exchangeCard model index =
             |> (\d -> { model
                 | exchange = d
                 , selection = []
+                , possibilities = []
             })
         _ ->
             model
@@ -488,6 +544,11 @@ exchangeButton userName game player =
         Exchange "Exchange"
 
 
+styleProperCombination model =
+    case model.possibilities of
+        h :: t -> "proper-combination"
+        _ -> ""
+
 gameView : Context msg Msg -> String -> Model -> Game -> Html msg
 gameView ctx userName model game =
     List.filter (.name >> (==) userName) game.round.players
@@ -496,7 +557,7 @@ gameView ctx userName model game =
         multiCellRow
             [ chatPanel game
             , ( 8, [ Html.map ctx.mapMsg <|
-                        div [ class "table-main" ]
+                        div [ class ("table-main " ++ (styleProperCombination model)) ]
                             [ playerGameBox model.selection "player-bottom" game 0
                             , playerGameBox model.selection "player-right" game 1
                             , playerGameBox model.selection "player-top" game 2
@@ -524,11 +585,32 @@ gameView ctx userName model game =
                                     |> div [ class "btn-group mahjong-demand"]
                                 _ ->
                                     div [] []
+                            , case List.length model.possibilities > 1 of
+                                True ->
+                                    div [] <|
+                                        List.map (\possibility ->
+                                            div [ class ("btn btn-default" ++ (
+                                                    model.phoenixMeaning
+                                                    |> Maybe.map (\meaning ->
+                                                        if toString possibility == meaning then
+                                                            " active"
+                                                        else
+                                                            ""
+                                                    )
+                                                    |> Maybe.withDefault ""
+                                                    ))
+                                                , onClick (ChoosePhoenixMeaning
+                                                    (toString possibility))
+                                                ]
+                                                [ text (toString possibility) ]
+                                        ) model.possibilities
+                                False ->
+                                    div [] []
                             , case player.exchange of
                                 Just _ ->
                                     case game.round.table of
                                         h :: t ->
-                                            div [ class "cards-on-table" ] (printCards h [])
+                                            div [ class "cards-on-table " ] (printCards h [])
                                         _ ->
                                             div [] []
                                 Nothing ->
