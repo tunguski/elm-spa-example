@@ -7,6 +7,7 @@ import Html.Events exposing (onInput, onClick)
 import Murmur3
 import Navigation
 import Json.Decode as Json exposing (..)
+import Json.Encode as JE
 import Process
 import Result exposing (toMaybe)
 import Task exposing (Task)
@@ -135,7 +136,7 @@ update ctx action model =
                                     { newModel | awaitingTable = Just awaitingTable } ! []
 
                                 Err game ->
-                                    { newModel | game = Just game } ! (sendGetGame game)
+                                    (setSelection { newModel | game = Just game } game model.selection) ! (sendGetGame game)
 
                     _ ->
                         case model.game of
@@ -219,7 +220,7 @@ update ctx action model =
                             case (List.member MahJong model.selection, model.demand) of
                                 (True, Just rank) ->
                                     games
-                                    |> withBody (encode rankEncoder rank)
+                                    |> withBody (JE.encode 0 (JE.object [ ("rank", rankEncoder rank) ] ) )
                                     |> postCommand (model.name ++ "/demandRank")
                                     |> sendCustomCommand SendHand ctx
                                     model
