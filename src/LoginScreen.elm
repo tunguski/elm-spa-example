@@ -61,55 +61,45 @@ update ctx action model =
 view : msg -> ComponentView Model msg Msg
 view playAsGuest ctx model =
     Page "Login" <|
-        Html.form [ class "form" ]
-            [ div [ class "col-md-offset-4 col-md-4" ]
-                [ legend [] [ text "Please login" ]
-                , Html.form
-                    [ class "form-horizontal" ]
-                    [ div [ class "form-group" ]
-                        [ label
-                            [ class "col-sm-3 control-label" ]
-                            [ text "Login" ]
-                        , div [ class "col-sm-9" ]
-                            [ input
-                                [ type_ "text"
-                                , class "form-control"
-                                , placeholder "Login"
-                                , onInput <| Name >> ctx.mapMsg
-                                ]
-                                []
-                            ]
-                        ]
-                    , div [ class "form-group" ]
-                        [ label
-                            [ class "col-sm-3 control-label" ]
-                            [ text "Password" ]
-                        , div [ class "col-sm-9" ]
-                            [ input
-                                [ type_ "text"
-                                , class "form-control"
-                                , placeholder "Password"
-                                , onInput <| Password >> ctx.mapMsg
-                                ]
-                                []
-                            ]
-                        ]
-                    , div [ class "form-group" ]
-                        [ div [ class "col-sm-offset-3 col-sm-9" ]
-                            [ button
-                                [ type_ "button"
-                                , class "btn btn-primary"
-                                  --, onClick Login
-                                ]
-                                [ text "Login" ]
-                            , button
-                                [ type_ "button"
-                                , class "btn btn-default"
-                                , onClick playAsGuest
-                                ]
-                                [ text "Play as Guest" ]
+    div [ class "site-wrapper" ]
+        [ div [ class "site-wrapper-inner" ]
+            [ div [ class "cover-container" ]
+                [ div [ class "masthead clearfix" ]
+                    [ div [ class "inner" ]
+                        [ h3 [ class "masthead-brand" ]
+                            [ text "Tichu Guru "
+                            , small [] [ text "(beta)" ]
                             ]
                         ]
                     ]
+                , div [ class "inner cover" ]
+                    [ h1 [ class "cover-heading" ] [ text "House of Tichu" ]
+                    , p [ class "lead" ]
+                        [ text "Tichu Guru is a site created with single best card game in mind." ]
+                    , p [ class "lead" ]
+                        [ input
+                            [ class "form-control w-50 login-username"
+                            , type_ "text"
+                            , placeholder "Please enter username"
+                            , onInput <| Name >> ctx.mapMsg
+                            ] [] ]
+                    , p [ class "lead" ]
+                        [ button
+                            [ class "btn btn-lg btn-secondary"
+                            , type_  "button"
+                            , onClick playAsGuest
+                            ]
+                            [ text "Play!" ]
+                        ]
+                    ]
+                , div [ class "mastfoot" ]
+                    [ div [ class "inner" ]
+                        [ p [] [ text "Tichu Guru Team 2017" ]
+                        ]
+                    ]
+                --, div [ class "blur" ] []
                 ]
             ]
+        ]
+
+

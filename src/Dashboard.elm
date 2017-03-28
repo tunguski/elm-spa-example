@@ -152,78 +152,122 @@ gameTypeRadio ctx isChecked description gameType =
 view : ComponentView Model msg Msg
 view ctx model =
     Page "Dashboard" <|
-        fullRow
-            [ Html.form [ class "form-inline" ]
-                [ div [ class "form-group" ]
-                    [ label [] [ text "Table Name" ]
-                    , input
-                        [ class "form-control"
-                        , placeholder "Unique name"
-                        , onInput <| TableName >> ctx.mapMsg
-                        ]
-                        []
-                    ]
-                , gameTypeRadio ctx (model.gameConfig.gameType == Humans) "Humans only" Humans
-                , gameTypeRadio ctx False "Humans vs. bots" HumansVsBots
-                , gameTypeRadio ctx False "Play with bots" Bots
-                , button
-                    ([ class "btn btn-primary"
-                    , type_ "button"
-                    ]
-                    ++
-                      case String.length model.newTableName >= 3 of
-                        True ->
-                            [ onClick <| ctx.mapMsg CreateNewTable ]
-                        False ->
-                            [ disabled True ]
-                    )
-                    [ text "Create New Table" ]
-                ]
-            , h3 [] [ text "Open Tables" ]
-            , table [ class "table table-striped x" ]
-                [ thead []
-                    [ tr []
-                        [ th [] [ text "Name" ]
-                        , th [] []
-                        , th [] [ text "Player" ]
-                        ]
-                    ]
-                , tbody []
-                    (case model.openTables of
-                        Just tables ->
-                            tables|> List.map (\table ->
-                                tr []
-                                    [ td [] [ a [ href ("#/Table/" ++ table.name) ] [ text table.name ] ]
-                                    , td [] [ text (toString (List.length table.users) ++ "/4") ]
-                                    , td []
-                                        (List.map (.name >> text) table.users)
-                                    ]
-                            )
-
-                        Nothing ->
-                            []
-                    )
-                ]
-            , h3 [] [ text "Players" ]
-            , table [ class "table table-striped x" ]
-                [ thead []
-                    [ tr []
-                        [ th [] [ text "Name" ]
-                        , th [] [ text "Ranking" ]
-                        , th [] [ text "Stats" ]
-                        ]
-                    ]
-                , tbody []
-                    [ tr []
-                        [ td [] [ text "Name" ]
-                        , td [] [ text "Player" ]
-                        , td [] [ text "Stats" ]
-                        ]
-                    , tr []
-                        [ td [] [ text "Name" ]
-                        , td [] [ text "Player" ]
-                        , td [] [ text "Stats" ]
+    div [ class "container-fluid" ]
+        [ nav [ class "navbar" ]
+            [ div [ class "masthead clearfix" ]
+                [ div [ class "inner" ]
+                    [ h3 [ class "masthead-brand" ]
+                        [ text "Tichu Guru "
+                        , small [] [ text "(beta)" ]
                         ]
                     ]
                 ]
             ]
+        , h3 [ class "thin" ] [ text "Open Tables" ]
+        , div [ class "row" ] <|
+            div [ class "col-md-3 col-xl-2 col-sm-6" ]
+                [ div [ class "game-card" ]
+                    [ text "New Table"
+                    , div [ class "add-table-button" ]
+                        [ text "+" ]
+                    ]
+                ]
+            ::
+            (List.map (\name ->
+                div [ class "col-md-3 col-xl-2 col-sm-6" ]
+                    [ div [ class "game-card" ]
+                        [ text name
+                        ]
+                    ]
+             )
+             <| List.map (\i -> toString i)
+             <| List.range 0 30
+            )
+        , footer [ class "default-footer" ]
+            [ div [ class "" ]
+                [ p [] [ text "Tichu Guru Team 2017" ]
+                ]
+            ]
+        ]
+
+
+--view : ComponentView Model msg Msg
+--view ctx model =
+--    Page "Dashboard" <|
+--        fullRow
+--            [ Html.form [ class "form-inline" ]
+--                [ div [ class "form-group" ]
+--                    [ label [] [ text "Table Name" ]
+--                    , input
+--                        [ class "form-control"
+--                        , placeholder "Unique name"
+--                        , onInput <| TableName >> ctx.mapMsg
+--                        ]
+--                        []
+--                    ]
+--                , gameTypeRadio ctx (model.gameConfig.gameType == Humans) "Humans only" Humans
+--                , gameTypeRadio ctx False "Humans vs. bots" HumansVsBots
+--                , gameTypeRadio ctx False "Play with bots" Bots
+--                , button
+--                    ([ class "btn btn-primary"
+--                    , type_ "button"
+--                    ]
+--                    ++
+--                      case String.length model.newTableName >= 3 of
+--                        True ->
+--                            [ onClick <| ctx.mapMsg CreateNewTable ]
+--                        False ->
+--                            [ disabled True ]
+--                    )
+--                    [ text "Create New Table" ]
+--                ]
+--            , h3 [] [ text "Open Tables" ]
+--            , table [ class "table table-striped x" ]
+--                [ thead []
+--                    [ tr []
+--                        [ th [] [ text "Name" ]
+--                        , th [] []
+--                        , th [] [ text "Player" ]
+--                        ]
+--                    ]
+--                , tbody []
+--                    (case model.openTables of
+--                        Just tables ->
+--                            tables|> List.map (\table ->
+--                                tr []
+--                                    [ td [] [ a [ href ("#/Table/" ++ table.name) ] [ text table.name ] ]
+--                                    , td [] [ text (toString (List.length table.users) ++ "/4") ]
+--                                    , td []
+--                                        (List.map (.name >> text) table.users)
+--                                    ]
+--                            )
+--
+--                        Nothing ->
+--                            []
+--                    )
+--                ]
+--            , h3 [] [ text "Players" ]
+--            , table [ class "table table-striped x" ]
+--                [ thead []
+--                    [ tr []
+--                        [ th [] [ text "Name" ]
+--                        , th [] [ text "Ranking" ]
+--                        , th [] [ text "Stats" ]
+--                        ]
+--                    ]
+--                , tbody []
+--                    [ tr []
+--                        [ td [] [ text "Name" ]
+--                        , td [] [ text "Player" ]
+--                        , td [] [ text "Stats" ]
+--                        ]
+--                    , tr []
+--                        [ td [] [ text "Name" ]
+--                        , td [] [ text "Player" ]
+--                        , td [] [ text "Stats" ]
+--                        ]
+--                    ]
+--                ]
+--            ]
+
+

@@ -195,26 +195,25 @@ view model =
             generatePageContent model
     in
         div
-            [ class
+            [ class <|
+                "site-wrapper " ++
                 (if model.config.smallSidebar then
                     "sidebar-small"
                  else
                     ""
-                        ++ if model.session == Nothing then
-                            "anonymous"
-                           else
-                            ""
+                 ++ if model.session == Nothing then
+                        "anonymous"
+                    else
+                        ""
                 )
             ]
-            [ node "style" [ type_ "text/css" ] [ text (generateCss model.config) ]
-            , topMenu model
-            , div [ id "page-wrapper" ]
-                [ headerRow page.title
-                , page.content
-                ]
+            [ node "style" [ type_ "text/css" ] [ text (coverCss model.config) ]
+            , page.content
             ]
 
 
 printRow : List (Html Msg) -> Html Msg
 printRow content =
     div [ class "row" ] [ div [ class "col-md-12" ] content ]
+
+

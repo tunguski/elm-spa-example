@@ -9,14 +9,11 @@ import Msg exposing (..)
 import Model exposing (..)
 import ModelOps exposing (initModel, locationToMsg)
 import Update exposing (update)
-import Task.Task as Task
-import Member.Member as Member
-import Report.Report as Report
 
 
 main =
     Navigation.program
-        locationToMsg 
+        locationToMsg
         { init = initModel
         , update = update
         , subscriptions = subscriptions
