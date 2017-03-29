@@ -605,6 +605,11 @@ body {
     margin-bottom: 40px;
 }
 
+input.table-name {
+    max-width: 300px;
+    margin: auto;
+}
+
 .blur {
     position: fixed;
     top: 0;
@@ -614,6 +619,30 @@ body {
     background-color: #000;
     width: 100%;
     height: 100%;
+}
+
+
+.chat-header ,
+.table-options-header {
+  font-weight: bold;
+  padding: 10px;
+  border-bottom: 1px solid #e7e7e7;
+  margin-bottom: 10px;
+}
+
+.table-chat div {
+  padding-bottom: 10px;
+  padding-left: 10px;
+  padding-right: 10px;
+}
+
+.table-main {
+  padding: 10px;
+  border: 1px solid green;
+  border-radius: 10px;
+  min-height: 400px;
+  width: 100%;
+  padding-bottom: 60%;
 }
 
 

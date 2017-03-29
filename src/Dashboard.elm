@@ -36,6 +36,7 @@ type alias Player =
 
 type alias Model =
     { newTableName : String
+    , createNewTable : Bool
     , openTables : Maybe (List AwaitingTable)
     , players : Maybe (List Player)
     , lastFinishedTableUpdate : Maybe Time
@@ -45,7 +46,7 @@ type alias Model =
 
 model : Model
 model =
-    Model "" Nothing Nothing Nothing (GameConfig Humans)
+    Model "" False Nothing Nothing Nothing (GameConfig Humans)
 
 
 init : Context msg Msg -> Cmd msg
@@ -69,6 +70,7 @@ subs ctx model =
 type Msg
     = TableName String
     | CreateNewTable
+    | SendCreateNewTable
     | OpenTable String
     | UpdateTables (Result Http.Error ( Time, List AwaitingTable ))
     | CheckUpdate Time
@@ -88,6 +90,9 @@ update ctx action model =
                 { model | gameConfig = { gameConfig | gameType = gameType } } ! []
 
         CreateNewTable ->
+            { model | createNewTable = True } ! []
+
+        SendCreateNewTable ->
             model
                 ! [ awaitingTables
                     |> withBody (encodeGameConfig model.gameConfig)
@@ -165,12 +170,45 @@ view ctx model =
             ]
         , h3 [ class "thin" ] [ text "Open Tables" ]
         , div [ class "row" ] <|
-            div [ class "col-md-3 col-xl-2 col-sm-6" ]
-                [ div [ class "game-card" ]
-                    [ text "New Table"
-                    , div [ class "add-table-button" ]
-                        [ text "+" ]
+            div [ class (if model.createNewTable then "col-12" else "col-md-3 col-xl-2 col-sm-6")
+                ]
+                [ div
+                    [ class "game-card"
+                    , onClick <| ctx.mapMsg CreateNewTable
                     ]
+                    (if model.createNewTable then
+                        --[ text "Describe new table"
+                        [ div [ class "form-group" ]
+                            [ label [] [ text "Table Name" ]
+                            , input
+                                [ class "form-control table-name"
+                                , placeholder "Unique name"
+                                , onInput <| TableName >> ctx.mapMsg
+                                ]
+                                []
+                            ]
+                        , gameTypeRadio ctx (model.gameConfig.gameType == Humans) "Humans only" Humans
+                        , gameTypeRadio ctx False "Humans vs. bots" HumansVsBots
+                        , gameTypeRadio ctx False "Play with bots" Bots
+                        , button
+                            ([ class "btn btn-primary"
+                            , type_ "button"
+                            ]
+                            ++
+                              case String.length model.newTableName >= 3 of
+                                True ->
+                                    [ onClick <| ctx.mapMsg SendCreateNewTable ]
+                                False ->
+                                    [ disabled True ]
+                            )
+                            [ text "Create New Table" ]
+                        ]
+                     else
+                        [ text "New Table"
+                        , div [ class "add-table-button" ]
+                            [ text "+" ]
+                        ]
+                    )
                 ]
             ::
             (List.map (\name ->
@@ -215,7 +253,7 @@ view ctx model =
 --                    ++
 --                      case String.length model.newTableName >= 3 of
 --                        True ->
---                            [ onClick <| ctx.mapMsg CreateNewTable ]
+--                            [ onClick <| ctx.mapMsg SendCreateNewTable ]
 --                        False ->
 --                            [ disabled True ]
 --                    )

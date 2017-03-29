@@ -465,32 +465,35 @@ gameSummaryPanel game =
 
 awaitingTableView : Context msg Msg -> AwaitingTable -> Html msg
 awaitingTableView ctx table =
-    multiCellRow
-        [ chatPanel ()
-        , ( 8, [ div [ class "table-main" ]
-                [ playerBox "player-bottom" table 0
-                , playerBox "player-right" table 1
-                , playerBox "player-top" table 2
-                , playerBox "player-left" table 3
-                , List.head table.users
-                  |> Maybe.map (.pressedStart >> not >> (&&) (List.length table.users == 4))
-                  |> Maybe.andThen (\show ->
-                      case show of
-                          True ->
-                              Just <|
-                                div
-                                  [ class "btn btn-primary middle-table"
-                                  , onClick <| ctx.mapMsg Start
-                                  ]
-                                  [ text "Start" ]
-                          _ ->
-                              Nothing
-                  )
-                  |> Maybe.withDefault (div [] [])
-                ]
-               ] )
-        --, gameSummaryPanel table
-        ]
+    div [ class "container-fluid" ] [
+        multiCellRow
+            [ chatPanel ()
+            , ( 8, [ div [ class "table-main" ]
+                    [ playerBox "player-bottom" table 0
+                    , playerBox "player-right" table 1
+                    , playerBox "player-top" table 2
+                    , playerBox "player-left" table 3
+                    , List.head table.users
+                      |> Maybe.map (.pressedStart >> not >> (&&) (List.length table.users == 4))
+                      |> Maybe.andThen (\show ->
+                          case show of
+                              True ->
+                                  Just <|
+                                    button
+                                      [ class "btn btn-primary middle-table"
+                                      , type_ "button"
+                                      , onClick <| ctx.mapMsg Start
+                                      ]
+                                      [ text "Start" ]
+                              _ ->
+                                  Nothing
+                      )
+                      |> Maybe.withDefault (div [] [])
+                    ]
+                   ] )
+            --, gameSummaryPanel table
+            ]
+    ]
 
 
 gameButton condition msg title =
@@ -565,10 +568,14 @@ gameView ctx userName model game =
             [ chatPanel game
             , ( 8, [ Html.map ctx.mapMsg <|
                         div [ class ("table-main " ++ (styleProperCombination model)) ]
+
+                            -- players boxes
                             [ playerGameBox model.selection "player-bottom" game 0
                             , playerGameBox model.selection "player-right" game 1
                             , playerGameBox model.selection "player-top" game 2
                             , playerGameBox model.selection "player-left" game 3
+
+                            -- mahjong request panel
                             , case (List.member MahJong model.selection, player.exchange) of
                                 (True, Just a) ->
                                     ("N", Nothing) :: (List.map (\rank ->
@@ -592,13 +599,15 @@ gameView ctx userName model game =
                                     |> div [ class "btn-group mahjong-demand"]
                                 _ ->
                                     div [] []
+
+                            -- choose combination, show combination
                             , case model.possibilities of
                                 [] ->
                                     div [] []
                                 [ p ] ->
-                                    div [] [ text (toString p) ]
+                                    div [ class "float-left" ] [ text (toString p) ]
                                 _ ->
-                                    div [ class "btn-group phoenix-meaning" ] <|
+                                    div [ class "btn-group phoenix-meaning float-left" ] <|
                                         List.map (\possibility ->
                                             div [ class ("btn btn-default" ++ (
                                                     model.phoenixMeaning
@@ -615,15 +624,21 @@ gameView ctx userName model game =
                                                 ]
                                                 [ text (toString possibility) ]
                                         ) model.possibilities
+
+                            -- give dragon info
                             , if isGivingDragon model game then
-                                  div [] [ text "Give the Dragon" ]
+                                  div [ class "float-left" ] [ text "Give the Dragon" ]
                               else
                                   div [] []
+
+                            -- open demand info
                             , case (game.round.demand, game.round.demandCompleted) of
                                 (Just r, False) ->
-                                    div [] [ text ("Open demand for " ++ toString r) ]
+                                    div [ class "float-left" ] [ text ("Open demand for " ++ toString r) ]
                                 _ ->
                                     div [] []
+
+                            -- exchange panel
                             , case player.exchange of
                                 Just _ ->
                                     case game.round.table of
@@ -643,6 +658,8 @@ gameView ctx userName model game =
                                           ]
                                     else
                                         div [] []
+
+                            -- game buttons
                             , div [ class "game-buttons" ] <|
                                 List.filterMap identity
                                 [ grandTichuButton game player
@@ -658,6 +675,8 @@ gameView ctx userName model game =
             ]
         )
     |> Maybe.withDefault (div [] [ text <| "Could not find player " ++ userName ])
+    |> List.singleton
+    |> div [ class "container-fluid" ]
 
 
 printExchangeCard model index =
