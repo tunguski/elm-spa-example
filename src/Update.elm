@@ -43,8 +43,8 @@ update action model =
             in
                 { model | menu = { menu | expanded = not menu.expanded } } ! []
 
-        PlayAsGuest ->
-            model ! [ get "guest" sessions
+        PlayAsGuest name ->
+            model ! [ get ("guest?name=" ++ name) sessions
                       |> Task.attempt GetSession ]
 
         Resize size ->

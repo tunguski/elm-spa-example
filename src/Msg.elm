@@ -19,7 +19,7 @@ type Msg
     | UrlUpdate (Maybe MenuEntry)
     | InitialWindowSize
     | ToggleHamburgerMenu
-    | PlayAsGuest
+    | PlayAsGuest String
     | GetSession (Result Http.Error Session)
     | Resize Size
     | ToggleSideMenu Bool
@@ -40,3 +40,5 @@ type MenuEntry
     | ME_Member Member.Pages
     | ME_Report Report.Pages
     | ME_Tests
+
+

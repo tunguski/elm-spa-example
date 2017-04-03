@@ -10,7 +10,7 @@ import Component exposing (..)
 import SessionModel exposing (..)
 
 
-component : msg -> Component Model msg Msg
+component : (String -> msg) -> Component Model msg Msg
 component msg =
     Component.simpleCp model update (view msg)
 
@@ -58,7 +58,7 @@ update ctx action model =
 -- VIEW
 
 
-view : msg -> ComponentView Model msg Msg
+view : (String -> msg) -> ComponentView Model msg Msg
 view playAsGuest ctx model =
     Page "Login" <|
     div [ class "site-wrapper" ]
@@ -85,10 +85,15 @@ view playAsGuest ctx model =
                             ] [] ]
                     , p [ class "lead" ]
                         [ button
+                            ((if String.length model.name > 4 then
+                                onClick (playAsGuest model.name)
+                             else
+                                disabled True
+                            )
+                            ::
                             [ class "btn btn-lg btn-secondary"
                             , type_  "button"
-                            , onClick playAsGuest
-                            ]
+                            ])
                             [ text "Play!" ]
                         ]
                     ]
