@@ -52,7 +52,11 @@ cssStyle =
 }
 .table-main {
     position: relative;
-    zoom: 120%;
+}
+@media (min-width: 1200px) {
+    .table-main {
+        zoom: 120%;
+    }
 }
 .mahjong-demand {
     position: absolute;
@@ -83,21 +87,6 @@ cssStyle =
     bottom: 10px;
     left: 45%;
 }
-.middle-table {
-    position: absolute;
-    display: inline-block;
-    top: 45%;
-    left: 45%;
-}
-.game-buttons {
-    position: absolute;
-    display: inline-block;
-    left: 10px;
-    bottom: 10px;
-}
-.game-buttons > div {
-    display: inline-block;
-}
 .card-exchange {
     position: absolute;
     display: inline-block;
@@ -127,9 +116,6 @@ cssStyle =
 .table-hand-owner {
     border: 2px solid yellow;
     padding: 5px;
-}
-.middle-table {
-    min-height: 50%;
 }
 """
 
@@ -645,9 +631,7 @@ input.table-name {
   padding: 10px;
   border: 1px solid green;
   border-radius: 10px;
-  min-height: 400px;
   width: 100%;
-  padding-bottom: 60%;
 }
 
 .game-table {
@@ -666,6 +650,20 @@ input.table-name {
 .full-game-row {
     column-span: all;
     width: 100%;
+}
+
+.game-buttons {
+    margin-top: 10px;
+    float: left;
+}
+
+.middle-table-row > div {
+    vertical-align: middle;
+    height: 200px;
+}
+
+.middle-table-row > .player-box {
+    width: 25%;
 }
 
 .game-table .left-player,
