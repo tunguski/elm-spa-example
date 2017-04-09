@@ -568,106 +568,130 @@ gameView ctx userName model game =
             [ chatPanel game
             , ( 8, [ Html.map ctx.mapMsg <|
                         div [ class ("table-main " ++ (styleProperCombination model)) ]
-
-                            -- players boxes
-                            [ playerGameBox model.selection "player-bottom" game 0
-                            , playerGameBox model.selection "player-right" game 1
-                            , playerGameBox model.selection "player-top" game 2
-                            , playerGameBox model.selection "player-left" game 3
-
-                            -- mahjong request panel
-                            , case (List.member MahJong model.selection, player.exchange) of
-                                (True, Just a) ->
-                                    ("N", Nothing) :: (List.map (\rank ->
-                                        (case rank of
-                                           R i -> toString i
-                                           a -> toString a
-                                        , Just rank
-                                        )
-
-                                    ) allowedRanks)
-                                    |> List.map (\(title, value) ->
-                                        div [ class ("btn btn-default" ++
-                                                if model.demand == value then
-                                                    " active"
-                                                else
-                                                    ""
-                                                )
-                                            , onClick (MahJongRequest value)
-                                            ] [ text title ]
-                                    )
-                                    |> div [ class "btn-group mahjong-demand"]
-                                _ ->
-                                    div [] []
-
-                            -- choose combination, show combination
-                            , case model.possibilities of
-                                [] ->
-                                    div [] []
-                                [ p ] ->
-                                    div [ class "float-left" ] [ text (toString p) ]
-                                _ ->
-                                    div [ class "btn-group phoenix-meaning float-left" ] <|
-                                        List.map (\possibility ->
-                                            div [ class ("btn btn-default" ++ (
-                                                    model.phoenixMeaning
-                                                    |> Maybe.map (\meaning ->
-                                                        if toString possibility == meaning then
-                                                            " active"
-                                                        else
-                                                            ""
-                                                    )
-                                                    |> Maybe.withDefault ""
-                                                    ))
-                                                , onClick (ChoosePhoenixMeaning
-                                                    (toString possibility))
-                                                ]
-                                                [ text (toString possibility) ]
-                                        ) model.possibilities
-
-                            -- give dragon info
-                            , if isGivingDragon model game then
-                                  div [ class "float-left" ] [ text "Give the Dragon" ]
-                              else
-                                  div [] []
-
-                            -- open demand info
-                            , case (game.round.demand, game.round.demandCompleted) of
-                                (Just r, False) ->
-                                    div [ class "float-left" ] [ text ("Open demand for " ++ toString r) ]
-                                _ ->
-                                    div [] []
-
-                            -- exchange panel
-                            , case player.exchange of
-                                Just _ ->
-                                    case game.round.table of
-                                        h :: t ->
-                                            div [ class "cards-on-table " ] (printCards h [])
-                                        _ ->
-                                            div [] []
-                                Nothing ->
-                                    if player.sawAllCards then
-                                        div [ class "card-exchange" ]
-                                          [ div [ onClick (SetExchange 0) ]
-                                              (printExchangeCard model 0)
-                                          , div [ onClick (SetExchange 1) ]
-                                              (printExchangeCard model 1)
-                                          , div [ onClick (SetExchange 2) ]
-                                              (printExchangeCard model 2)
+                            [ div [ class "game-table" ]
+                                [ div []
+                                    [ div []
+                                          [ div []
+                                            [ playerGameBox model.selection "player-top" game 2 ]
                                           ]
-                                    else
-                                        div [] []
+                                    ]
+                                , div []
+                                    [ div []
+                                        [ div [ class "game-table" ]
+                                            [ div []
+                                                [ div []
+                                                      [ div [] [ playerGameBox model.selection "player-left" game 3 ] ]
+                                                , div []
+                                                    [ div [ class "middle-table" ]
+                                                        -- mahjong request panel
+                                                        [ case (List.member MahJong model.selection, player.exchange) of
+                                                            (True, Just a) ->
+                                                                ("N", Nothing) :: (List.map (\rank ->
+                                                                    (case rank of
+                                                                       R i -> toString i
+                                                                       a -> toString a
+                                                                    , Just rank
+                                                                    )
 
-                            -- game buttons
-                            , div [ class "game-buttons" ] <|
-                                List.filterMap identity
-                                [ grandTichuButton game player
-                                , seeAllCardsButton game player
-                                , tichuButton game player
-                                , playButton userName game player model
-                                , passButton userName game player
-                                , exchangeButton userName game player
+                                                                ) allowedRanks)
+                                                                |> List.map (\(title, value) ->
+                                                                    div [ class ("btn btn-default" ++
+                                                                            if model.demand == value then
+                                                                                " active"
+                                                                            else
+                                                                                ""
+                                                                            )
+                                                                        , onClick (MahJongRequest value)
+                                                                        ] [ text title ]
+                                                                )
+                                                                |> div [ class "btn-group mahjong-demand"]
+                                                            _ ->
+                                                                div [] []
+
+                                                        -- choose combination, show combination
+                                                        , case model.possibilities of
+                                                            [] ->
+                                                                div [] []
+                                                            [ p ] ->
+                                                                div [ class "float-left" ] [ text (toString p) ]
+                                                            _ ->
+                                                                div [ class "btn-group phoenix-meaning float-left" ] <|
+                                                                    List.map (\possibility ->
+                                                                        div [ class ("btn btn-default" ++ (
+                                                                                model.phoenixMeaning
+                                                                                |> Maybe.map (\meaning ->
+                                                                                    if toString possibility == meaning then
+                                                                                        " active"
+                                                                                    else
+                                                                                        ""
+                                                                                )
+                                                                                |> Maybe.withDefault ""
+                                                                                ))
+                                                                            , onClick (ChoosePhoenixMeaning
+                                                                                (toString possibility))
+                                                                            ]
+                                                                            [ text (toString possibility) ]
+                                                                    ) model.possibilities
+
+                                                        -- give dragon info
+                                                        , if isGivingDragon model game then
+                                                              div [ class "float-left" ] [ text "Give the Dragon" ]
+                                                          else
+                                                              div [] []
+
+                                                        -- open demand info
+                                                        , case (game.round.demand, game.round.demandCompleted) of
+                                                            (Just r, False) ->
+                                                                div [ class "float-left" ] [ text ("Open demand for " ++ toString r) ]
+                                                            _ ->
+                                                                div [] []
+
+                                                        -- exchange panel
+                                                        , case player.exchange of
+                                                            Just _ ->
+                                                                case game.round.table of
+                                                                    h :: t ->
+                                                                        div [ class "cards-on-table " ] (printCards h [])
+                                                                    _ ->
+                                                                        div [] []
+                                                            Nothing ->
+                                                                if player.sawAllCards then
+                                                                    div [ class "card-exchange" ]
+                                                                      [ div [ onClick (SetExchange 0) ]
+                                                                          (printExchangeCard model 0)
+                                                                      , div [ onClick (SetExchange 1) ]
+                                                                          (printExchangeCard model 1)
+                                                                      , div [ onClick (SetExchange 2) ]
+                                                                          (printExchangeCard model 2)
+                                                                      ]
+                                                                else
+                                                                    div [] []
+                                                        ]
+                                                    ]
+                                                , div []
+                                                      [ div [] [ playerGameBox model.selection "player-right" game 1 ] ]
+                                                ]
+                                            ]
+                                        ]
+                                    ]
+                                , div []
+                                    [ div []
+                                        [ playerGameBox model.selection "player-bottom" game 0 ]
+                                    ]
+                                , div []
+                                    [ div [ class "mx-auto" ]
+                                        -- game buttons
+                                        [ div [ class "game-buttons" ] <|
+                                            List.filterMap identity
+                                            [ grandTichuButton game player
+                                            , seeAllCardsButton game player
+                                            , tichuButton game player
+                                            , playButton userName game player model
+                                            , passButton userName game player
+                                            , exchangeButton userName game player
+                                            ]
+                                        ]
+                                    ]
                                 ]
                             ]
                    ] )

@@ -58,6 +58,7 @@ cssStyle =
     position: absolute;
     top: 60px;
 }
+/*
 .player-left {
     position: absolute;
     display: inline-block;
@@ -118,6 +119,7 @@ cssStyle =
     top: 45%;
     left: 35%;
 }
+*/
 .actual-player {
     border: 2px solid blue;
     padding: 5px;
@@ -125,6 +127,9 @@ cssStyle =
 .table-hand-owner {
     border: 2px solid yellow;
     padding: 5px;
+}
+.middle-table {
+    min-height: 50%;
 }
 """
 
@@ -645,5 +650,27 @@ input.table-name {
   padding-bottom: 60%;
 }
 
+.game-table {
+    display: table;
+    width: 100%;
+}
+
+.game-table > div {
+    display: table-row;
+}
+
+.game-table > div  > div {
+    display: table-cell;
+}
+
+.full-game-row {
+    column-span: all;
+    width: 100%;
+}
+
+.game-table .left-player,
+.game-table .right-player {
+    width: 25%;
+}
 
 """ ]
