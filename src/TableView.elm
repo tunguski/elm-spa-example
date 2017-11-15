@@ -660,11 +660,11 @@ gameView ctx userName model game =
                                                 if player.sawAllCards then
                                                     div [ class "card-exchange" ]
                                                       [ div [ onClick (SetExchange 0) ]
-                                                          (printExchangeCard model 0)
+                                                        [ div [] (printExchangeCard model 0) ]
                                                       , div [ onClick (SetExchange 1) ]
-                                                          (printExchangeCard model 1)
+                                                        [ div [] (printExchangeCard model 1) ]
                                                       , div [ onClick (SetExchange 2) ]
-                                                          (printExchangeCard model 2)
+                                                        [ div [] (printExchangeCard model 2) ]
                                                       ]
                                                 else
                                                     div [] []

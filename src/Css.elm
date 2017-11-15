@@ -87,28 +87,27 @@ cssStyle =
     bottom: 10px;
     left: 45%;
 }
+*/
 .card-exchange {
-    position: absolute;
     display: inline-block;
-    top: 45%;
-    left: 35%;
 }
 .card-exchange > div {
     display: inline-block;
     padding: 20px;
     margin: 5px;
     border: 1px solid black;
+    vertical-align: bottom;
+}
+.card-exchange > div > div {
+    min-height: 1.5em;
+    min-width: 2em;
 }
 .card-exchange > div:hover {
     background-color: #ddd;
 }
 .cards-on-table {
-    position: absolute;
     display: inline-block;
-    top: 45%;
-    left: 35%;
 }
-*/
 .actual-player {
     border: 2px solid blue;
     padding: 5px;

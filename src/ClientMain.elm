@@ -1,4 +1,4 @@
-module Main exposing (..)
+module ClientMain exposing (..)
 
 import Navigation
 import String exposing (dropLeft)
@@ -21,6 +21,7 @@ main =
         }
 
 
+
 -- SUBSCRIPTIONS
 
 
@@ -30,5 +31,3 @@ subscriptions model =
         [ resizes Resize
         , componentSubsMap model
         ]
-
-
