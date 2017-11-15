@@ -853,18 +853,23 @@ collectCards round =
 -}
 exchangeCardsBetweenPlayers table =
     Array.fromList table.round.players
+    -- add cards to new owners hands
     |> (\p ->
         Array.indexedMap (,) p
         |> Array.foldr (\(i, player) players ->
             case player.exchange of
                 Just (a, b, c) ->
-                    switchCard c (i + 1) players
-                    |> switchCard a (i + 2)
-                    |> switchCard b (i + 3)
+                    let
+                        x = Debug.log ("" ++ toString i) (a, b, c)
+                    in
+                        switchCard c (i + 1) players
+                        |> switchCard b (i + 2)
+                        |> switchCard a (i + 3)
                 Nothing ->
                     Debug.log "Cannot exchange if player did not declare cards" players
         ) p
     )
+    -- remove cards from old owners hands
     |> (\players ->
         let
             round = table.round
@@ -882,9 +887,8 @@ exchangeCardsBetweenPlayers table =
                 ) <| Array.toList players
             }
     )
-    |> (\round -> { table | round =
-        setMahjongOwnerAsActualPlayer round
-    })
+    -- set first player to play
+    |> (\round -> { table | round = setMahjongOwnerAsActualPlayer round })
 
 
 

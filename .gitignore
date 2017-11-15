@@ -2,9 +2,10 @@
 *.log
 npm-debug.log
 main.js
-public/example.js
+public/client.js
 
 elm-stuff/
 node_modules/
 client
 *.bak
+target/

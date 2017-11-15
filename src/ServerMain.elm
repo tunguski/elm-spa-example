@@ -1,8 +1,7 @@
-module Example exposing (..)
+module ServerMain exposing (..)
 
 import Base64
 import Debug
-import Json.Decode as JD
 import Dict
 import Http exposing (Error(..))
 import Json.Decode as Json exposing (..)
@@ -10,8 +9,6 @@ import RandomTask exposing (..)
 import String
 import Result exposing (Result)
 import Task exposing (Task)
-
-
 import ApiPartApi exposing (..)
 import AwaitingTable exposing (..)
 import Game exposing (..)
@@ -31,6 +28,7 @@ main =
     Server.program init update postRequestUpdater
 
 
+
 -- UPDATE
 
 
@@ -42,13 +40,13 @@ type Msg
 withSession : Request -> (Session -> Task Error Response) -> Partial Msg
 withSession request action =
     executeIfIdSessionExists request (\id -> get id sessions)
-    |> processTask action
+        |> processTask action
 
 
 withSessionMaybe : Request -> (Error -> Msg) -> (Session -> Task Error Response) -> Partial Msg
 withSessionMaybe request errorProcessor action =
     executeIfIdSessionExists request (\id -> get id sessions)
-    |> processTaskWithError errorProcessor action
+        |> processTaskWithError errorProcessor action
 
 
 processTaskWithError : (x -> Msg) -> (item -> Task x Response) -> Task x item -> Partial Msg
@@ -59,6 +57,7 @@ processTaskWithError errorProcessor eval task =
                 case result of
                     Ok response ->
                         SendResponse response
+
                     Err error ->
                         errorProcessor error
             )
@@ -76,26 +75,33 @@ processTask eval task =
                 SendResponse (statusResponse 500)
         )
         eval
-        (task |> Task.onError (\error ->
-            case error of
-                BadStatus response ->
-                    case response.status.code of
-                        404 ->
-                            Debug.log "!!!! Duplicate task execution on 404" task
-                        500 ->
-                            Debug.log "!!!! Duplicate task execution on 500" task
+        (task
+            |> Task.onError
+                (\error ->
+                    case error of
+                        BadStatus response ->
+                            case response.status.code of
+                                404 ->
+                                    Debug.log "!!!! Duplicate task execution on 404" task
+
+                                500 ->
+                                    Debug.log "!!!! Duplicate task execution on 500" task
+
+                                _ ->
+                                    Task.fail <| Debug.log "!!!! Other fail" error
+
                         _ ->
                             Task.fail <| Debug.log "!!!! Other fail" error
-                _ ->
-                    Task.fail <| Debug.log "!!!! Other fail" error
-        ))
+                )
+        )
+
 
 requiredTables =
     [ collectionUrl sessions
     , collectionUrl users
     , collectionUrl games
     , collectionUrl awaitingTables
-    --, collectionUrl archiveGames
+      --, collectionUrl archiveGames
     ]
 
 
@@ -106,6 +112,7 @@ performBatch tasks =
                 case result of
                     Ok data ->
                         data |> (toString >> okResponse >> SendResponse)
+
                     Err error ->
                         error |> (toString >> response 500 >> SendResponse)
             )
@@ -114,7 +121,7 @@ performBatch tasks =
 
 initDb : () -> Partial Msg
 initDb _ =
-   performBatch
+    performBatch
         (List.map createCollection requiredTables)
 
 
@@ -122,13 +129,20 @@ eraseDb : () -> Partial Msg
 eraseDb _ =
     performBatch <|
         (List.map deleteCollection requiredTables)
-        ++ (List.map createCollection requiredTables)
+            ++ (List.map createCollection requiredTables)
 
 
-init : Initializer Msg -- Request -> Partial Msg
+init : Initializer Msg
+
+
+
+-- Request -> Partial Msg
+
+
 init request =
     let
-        api = ApiPartApi request (withSession request) SendResponse
+        api =
+            ApiPartApi request (withSession request) SendResponse
 
         -- serialize provided object and return it as successful task response with status 200
         restMap =
@@ -151,7 +165,13 @@ init request =
                 Result (statusResponse 404)
 
 
-update : Updater Msg -- Request -> Msg -> Partial Msg
+update : Updater Msg
+
+
+
+-- Request -> Msg -> Partial Msg
+
+
 update request msg =
     case msg of
         SendResponse response ->
@@ -161,6 +181,7 @@ update request msg =
             case result of
                 Ok (Just cmd) ->
                     Command cmd
+
                 _ ->
                     Noop
 
@@ -173,7 +194,8 @@ postRequestUpdater request =
                 ]
     in
         case parse restMap request.url of
-            Ok cmd -> cmd
-            Err error -> Nothing
+            Ok cmd ->
+                cmd
 
-
+            Err error ->
+                Nothing
