@@ -1,27 +1,30 @@
-module Msg exposing (..)
+module Msg exposing (MenuEntry(..), Msg(..))
 
-import Window exposing (Size)
-import Http
-import Config
+import Browser
 import Component exposing (Component)
-import Task.Task as Task
+import Config
+import Dashboard
+import Http
+import LoginScreen
 import Member.Member as Member
 import Report.Report as Report
-import Dashboard
-import TableView
 import SessionModel exposing (Session)
-import LoginScreen
+import TableView
+import Task.Task as Task
 import Tests
+import Url exposing (Url)
 
 
 type Msg
     = None
     | UrlUpdate (Maybe MenuEntry)
+    | UrlRequest Browser.UrlRequest
+    | UrlChange Url
     | InitialWindowSize
     | ToggleHamburgerMenu
     | PlayAsGuest String
     | GetSession (Result Http.Error Session)
-    | Resize Size
+    | Resize Int Int
     | ToggleSideMenu Bool
     | ChangeView MenuEntry
     | Login LoginScreen.Msg
@@ -40,5 +43,3 @@ type MenuEntry
     | ME_Member Member.Pages
     | ME_Report Report.Pages
     | ME_Tests
-
-

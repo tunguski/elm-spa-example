@@ -1,5 +1,4 @@
-module ExampleDb exposing (..)
-
+module ExampleDb exposing (awaitingTables, createDbCollection, dbUrl, games, sessions, users)
 
 import MongoDb exposing (..)
 import Rest exposing (..)
@@ -9,11 +8,11 @@ import UserModel exposing (..)
 
 
 dbUrl =
-  "http://admin:changeit@localhost:8888/testdb/"
+    "http://admin:changeit@localhost:8888/testdb/"
 
 
 createDbCollection =
-  restCollection dbUrl
+    restCollection dbUrl
 
 
 games =
@@ -38,5 +37,3 @@ sessions =
     createDbCollection "session"
         sessionDecoder
         sessionEncoder
-
-

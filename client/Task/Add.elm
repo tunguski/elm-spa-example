@@ -1,14 +1,14 @@
-module Task.Add exposing (..)
+module Task.Add exposing (Model, Msg(..), component, update, view)
 
+import Component exposing (..)
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (onInput)
-import Component exposing (..)
 
 
 component : Component Model msg Msg
 component =
-    Component.simpleCp model update view
+    Component.simpleCp emptyModel update view
 
 
 
@@ -20,8 +20,8 @@ type alias Model =
     }
 
 
-model : Model
-model =
+emptyModel : Model
+emptyModel =
     Model ""
 
 
@@ -37,7 +37,9 @@ update : ComponentUpdate Model msg Msg
 update ctx action model =
     case action of
         Name name ->
-            { model | name = name } ! []
+            ( { model | name = name }
+            , Cmd.none
+            )
 
 
 
@@ -79,7 +81,8 @@ view ctx model =
                         [ button
                             [ type_ "button"
                             , class "btn btn-primary"
-                              --              , onClick Name
+
+                            --              , onClick Name
                             ]
                             [ text "Add" ]
                         ]

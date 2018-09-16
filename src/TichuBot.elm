@@ -1,21 +1,18 @@
-module TichuBot exposing (..)
-
-
-import String
-import Task exposing (..)
-import Time exposing (second)
-import Http exposing (Error(..))
-
+module TichuBot exposing (botMove, executeIf, playCards, tableChanged)
 
 import ApiPartApi exposing (..)
 import BaseModel exposing (..)
+import Http exposing (Error(..))
 import MongoDb exposing (..)
 import Rest exposing (..)
 import Server exposing (..)
 import SessionModel exposing (Session)
+import String
+import Task exposing (..)
+import TichuLogic exposing (..)
 import TichuModel exposing (..)
 import TichuModelJson exposing (..)
-import TichuLogic exposing (..)
+import Time exposing (second)
 
 
 {-| Maybe make bot's move. Returned task describes what bot want's to do.
@@ -23,140 +20,178 @@ import TichuLogic exposing (..)
 tableChanged : String -> Game -> Maybe (Task Error String)
 tableChanged botName game =
     let
-        actualPlayer = getActualPlayer game.round
-        player = getPlayer game.round botName
-        param = buildHandParams botName game game.round player []
+        actualPlayer =
+            getActualPlayer game.round
+
+        player =
+            getPlayer game.round botName
+
+        param =
+            buildHandParams botName game game.round player []
     in
-        case roundFinished game.round of
-            False ->
-                botMove botName game game.round player actualPlayer param
+    case roundFinished game.round of
+        False ->
+            botMove botName game game.round player actualPlayer param
                 |> Maybe.map (processingResultToTask >> map toString)
-            True ->
-                Nothing
+
+        True ->
+            Nothing
 
 
 {-| Maybe make bot's move. Returned task describes what bot want's to do.
 -}
-botMove : String -> Game -> Round -> Player -> Player -> HandParams ->
-          Maybe (Result (Int, String) (Task Error Response))
+botMove :
+    String
+    -> Game
+    -> Round
+    -> Player
+    -> Player
+    -> HandParams
+    -> Maybe (Result ( Int, String ) (Task Error Response))
 botMove botName game round player actualPlayer param =
     Nothing
-    -- declare grand tichu or see all cards
-    |> executeIf (not player.sawAllCards) (\_ ->
-        if False then
-            declareGrandTichu botName game round player
-            |> Just
-            |> Debug.log "declareGrandTichu"
-        else
-            seeAllCards botName game round player
-            |> Just
-            |> Debug.log "seeAllCards"
-    )
-    -- exchange cards
-    |> executeIf (player.sawAllCards) (\_ ->
-        case player.exchange of
-            Just _ ->
+        -- declare grand tichu or see all cards
+        |> executeIf (not player.sawAllCards)
+            (\_ ->
+                if False then
+                    declareGrandTichu botName game round player
+                        |> Just
+                        |> Debug.log "declareGrandTichu"
+
+                else
+                    seeAllCards botName game round player
+                        |> Just
+                        |> Debug.log "seeAllCards"
+            )
+        -- exchange cards
+        |> executeIf player.sawAllCards
+            (\_ ->
+                case player.exchange of
+                    Just _ ->
+                        Nothing
+
+                    Nothing ->
+                        Maybe.map3
+                            (\a b c ->
+                                exchangeCards botName game round player (Ok [ a, b, c ])
+                            )
+                            (player.hand |> List.reverse |> List.head)
+                            (player.hand |> List.head)
+                            (player.hand |> List.drop 1 |> List.head)
+            )
+        -- maybe declare tichu
+        |> executeIf (player.sawAllCards && player.cardsOnHand == 14)
+            (\_ ->
                 Nothing
-            Nothing ->
-                Maybe.map3 (\a b c ->
-                    exchangeCards botName game round player (Ok [a, b, c])
-                )
-                (player.hand |> List.reverse |> List.head)
-                (player.hand |> List.head)
-                (player.hand |> List.drop 1 |> List.head)
+            )
+        -- give dragon
+        |> executeIf
+            ((case round.tableHandOwner of
+                Just owner ->
+                    owner
+                        == round.actualPlayer
+                        && (getNthPlayer round owner).name
+                        == botName
 
-    )
-    -- maybe declare tichu
-    |> executeIf (player.sawAllCards && player.cardsOnHand == 14) (\_ ->
-        Nothing
-    )
-    -- give dragon
-    |> executeIf ((
-        case round.tableHandOwner of
-            Just owner ->
-                owner == round.actualPlayer
-                && (getNthPlayer round owner).name == botName
-            _ ->
-                False
-        ) && (
-        case List.head round.table of
-            Just [ Dragon ] -> True
-            _ -> False
-    )) (\_ ->
-        giveDragon botName game round player False
-        |> Just
-        |> Debug.log "give the dragon"
-    )
-    -- play cards or pass
-    |> executeIf (actualPlayer.name == botName
-            && ((List.filterMap .exchange round.players |> List.length) == 4)) (\_ ->
-        let
-            playHand = playCards botName game player
-        in
-            case hasCard MahJong player of
-                True ->
-                    playHand [ MahJong ]
-                    |> Debug.log "mahjong"
+                _ ->
+                    False
+             )
+                && (case List.head round.table of
+                        Just [ Dragon ] ->
+                            True
 
-                False ->
-                    let
-                        higherCards =
-                            case List.head game.round.table of
-                                Just [ card ] ->
-                                    player.hand
-                                    |> List.filter (\c -> cardWeight c > cardWeight card)
-                                _ ->
-                                    player.hand
-                        normalProcess x =
-                            case List.head game.round.table of
-                                Nothing ->
-                                    List.head player.hand
-                                    |> Maybe.andThen (List.singleton >> playHand)
-                                    |> Debug.log "lowest card"
+                        _ ->
+                            False
+                   )
+            )
+            (\_ ->
+                giveDragon botName game round player False
+                    |> Just
+                    |> Debug.log "give the dragon"
+            )
+        -- play cards or pass
+        |> executeIf
+            (actualPlayer.name
+                == botName
+                && ((List.filterMap .exchange round.players |> List.length) == 4)
+            )
+            (\_ ->
+                let
+                    playHand =
+                        playCards botName game player
+                in
+                case hasCard MahJong player of
+                    True ->
+                        playHand [ MahJong ]
+                            |> Debug.log "mahjong"
 
-                                Just [ card ] ->
-                                    higherCards
-                                    |> List.head
-                                    |> Maybe.map (Debug.log "higher card")
-                                    |> Maybe.andThen (
-                                        List.singleton
-                                        >> playHand
-                                    )
-                                    |> Maybe.withDefault (
+                    False ->
+                        let
+                            higherCards =
+                                case List.head game.round.table of
+                                    Just [ card ] ->
+                                        player.hand
+                                            |> List.filter (\c -> cardWeight c > cardWeight card)
+
+                                    _ ->
+                                        player.hand
+
+                            normalProcess x =
+                                case List.head game.round.table of
+                                    Nothing ->
+                                        List.head player.hand
+                                            |> Maybe.andThen (List.singleton >> playHand)
+                                            |> Debug.log "lowest card"
+
+                                    Just [ card ] ->
+                                        higherCards
+                                            |> List.head
+                                            |> Maybe.map (Debug.log "higher card")
+                                            |> Maybe.andThen
+                                                (List.singleton
+                                                    >> playHand
+                                                )
+                                            |> Maybe.withDefault
+                                                (pass botName game round player
+                                                    |> Debug.log "pass"
+                                                )
+                                            |> Just
+
+                                    _ ->
                                         pass botName game round player
-                                        |> Debug.log "pass"
-                                    )
-                                    |> Just
-                                _ ->
-                                    pass botName game round player
-                                    |> Just
-                                    |> Debug.log "pass"
-                    in
-                        case (round.demand, round.demandCompleted) of
-                            (Just rank, False) ->
+                                            |> Just
+                                            |> Debug.log "pass"
+                        in
+                        case ( round.demand, round.demandCompleted ) of
+                            ( Just rank, False ) ->
                                 higherCards
-                                |> List.filter (\c ->
-                                    rankWeight rank == cardWeight c
-                                )
-                                |> List.head
-                                |> Maybe.map (\c ->
-                                    playHand [ c ]
-                                )
-                                |> Maybe.withDefault (normalProcess ())
+                                    |> List.filter
+                                        (\c ->
+                                            rankWeight rank == cardWeight c
+                                        )
+                                    |> List.head
+                                    |> Maybe.map
+                                        (\c ->
+                                            playHand [ c ]
+                                        )
+                                    |> Maybe.withDefault (normalProcess ())
+
                             _ ->
                                 normalProcess ()
-    )
-    |> executeIf (False) (\_ ->
-        Nothing
-    )
-    -- if game is finished, ignore any move
-    |> (\move ->
-        case game.finished of
-            Just _ ->
+            )
+        |> executeIf False
+            (\_ ->
                 Nothing
-            _ ->
-                move
-    )
+            )
+        -- if game is finished, ignore any move
+        |> (\move ->
+                case game.finished of
+                    Just _ ->
+                        Nothing
+
+                    _ ->
+                        move
+           )
 
 
 executeIf : Bool -> (() -> Maybe a) -> Maybe a -> Maybe a
@@ -164,9 +199,11 @@ executeIf condition exec step =
     case step of
         Just _ ->
             step
+
         Nothing ->
             if condition then
                 exec ()
+
             else
                 Nothing
 
@@ -178,13 +215,12 @@ playCards botName gameState actualPlayer cards =
         gameState.round
         actualPlayer
         cards
-    |> (\result ->
-        case result of
-            Ok task ->
-                task
-                |> (Ok >> Just)
-            Err err ->
-                Debug.log ("Error when tried to play cards!" ++ toString err) Nothing
-    )
+        |> (\result ->
+                case result of
+                    Ok task ->
+                        task
+                            |> (Ok >> Just)
 
-
+                    Err err ->
+                        Debug.log ("Error when tried to play cards!" ++ toString err) Nothing
+           )

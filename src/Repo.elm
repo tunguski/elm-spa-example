@@ -1,9 +1,9 @@
-module Repo exposing (..)
+module Repo exposing (RepoInfo, repoInfoDecoder)
 
+import BaseModel exposing (Collection)
+import Http exposing (Error)
 import Json.Decode as Json exposing (..)
 import Task exposing (Task)
-import Http exposing (Error)
-import BaseModel exposing (Collection)
 
 
 type alias RepoInfo =
@@ -17,6 +17,7 @@ repoInfoDecoder =
     Json.map2 RepoInfo
         (at [ "_id" ] <| field "$oid" string)
         (field "name" string)
+
 
 
 --getRepoInfos : Task Error (Collection RepoInfo)

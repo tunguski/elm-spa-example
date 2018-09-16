@@ -1,5 +1,4 @@
-module ClientApi exposing (..)
-
+module ClientApi exposing (awaitingTables, createDbCollection, dbUrl, games, sessions, users)
 
 import MongoDb exposing (..)
 import Rest exposing (..)
@@ -9,11 +8,11 @@ import UserModel exposing (..)
 
 
 dbUrl =
-  "/api/"
+    "/api/"
 
 
 createDbCollection =
-  restCollection dbUrl
+    restCollection dbUrl
 
 
 games =

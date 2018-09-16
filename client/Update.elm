@@ -1,65 +1,79 @@
-module Update exposing (..)
+module Update exposing (update)
 
-import Navigation
-import Task
-
-
+import Browser.Navigation as Navigation
 import ClientApi exposing (..)
-import Config exposing (..)
 import Component exposing (..)
-import Msg exposing (..)
+import Config exposing (..)
+import LoginScreen
 import Model exposing (..)
 import ModelOps exposing (..)
-import LoginScreen
+import Msg exposing (..)
 import Rest exposing (..)
 import SessionModel exposing (..)
 import TableView
+import Task
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update action model =
     case action of
         None ->
-            model ! []
+            ( model
+            , Cmd.none
+            )
 
         GetSession result ->
-            case (Debug.log "getSession" result) of
+            case Debug.log "getSession" result of
                 Ok session ->
-                    { model
-                    | session = Just session
-                    , tableComponent = TableView.component session.username model.tableComponent.model.name
-                    } ! []
+                    ( { model
+                        | session = Just session
+                        , tableComponent = TableView.component session.username model.tableComponent.model.name
+                      }
+                    , Cmd.none
+                    )
 
                 Err error ->
-                    { model | session = Nothing } ! []
+                    ( { model | session = Nothing }
+                    , Cmd.none
+                    )
 
         InitialWindowSize ->
-            model ! []
+            ( model
+            , Cmd.none
+            )
 
         ToggleHamburgerMenu ->
             let
                 menu =
                     model.menu
             in
-                { model | menu = { menu | expanded = not menu.expanded } } ! []
+            ( { model | menu = { menu | expanded = not menu.expanded } }
+            , Cmd.none
+            )
 
         PlayAsGuest name ->
-            model ! [ get ("guest?name=" ++ name) sessions
-                      |> Task.attempt GetSession ]
+            ( model
+            , get ("guest?name=" ++ name) sessions
+                |> Task.attempt GetSession
+            )
 
         Resize size ->
             let
                 config =
                     model.config
             in
-                { model | config = { config | windowSize = size } } ! []
+            ( { model | config = { config | windowSize = size } }
+            , Cmd.none
+            )
 
         ToggleSideMenu shorten ->
             let
                 config =
                     model.config
             in
-                { model | config = { config | smallSidebar = shorten } } ! []
+            ( { model | config = { config | smallSidebar = shorten } }
+            , Cmd.none
+            )
 
         ChangeView entry ->
             let
@@ -72,7 +86,9 @@ update action model =
                         , menu = { menu | expanded = False }
                     }
             in
-                newModel ! [ Navigation.newUrl (toUrl newModel) ]
+            ( newModel
+            , Navigation.pushUrl model.key (toUrl newModel)
+            )
 
         Dashboard msg ->
             Component.updateModel (Context Dashboard)
@@ -123,7 +139,11 @@ update action model =
                 model
                 msg
 
+        UrlRequest urlRequest ->
+            processUrlRequest urlRequest model
+
+        UrlChange url ->
+            processUrlChange url model
+
         UrlUpdate location ->
             changeLocation location model
-
-

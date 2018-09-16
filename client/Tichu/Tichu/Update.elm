@@ -1,16 +1,15 @@
-module Tichu.Update exposing (..)
+module Tichu.Update exposing (Msg(..), checkCard, declareGrandTichu, declareTichu, decodeGifUrl, executeUpdate, getRandomGif, placeCombination, removeSelectionFromHand, update, updateFirst, updateGame, updatePlayersDict, updateRound)
 
-import Tichu.Model exposing (..)
-import List exposing (..)
-import Http exposing (..)
-import Task exposing (..)
 import Dict exposing (Dict, empty, insert, update)
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
-import Http
+import Http exposing (..)
 import Json.Decode as Json
-import Task
+import List exposing (..)
+import Task exposing (..)
+import Tichu.Model exposing (..)
+
 
 
 -----------------------------------------------------------------------------
@@ -65,7 +64,7 @@ getRandomGif topic =
         url =
             "//api.giphy.com/v1/gifs/random?api_key=dc6zaTOxFJmzC&tag=" ++ topic
     in
-        Task.perform FetchFail FetchSucceed (Http.get decodeGifUrl url)
+    Task.perform FetchFail FetchSucceed (Http.get decodeGifUrl url)
 
 
 decodeGifUrl : Json.Decoder String
@@ -82,8 +81,10 @@ checkCard card player =
     if member card player.hand then
         if member card player.selection then
             { player | selection = filter (\c -> card /= c) player.selection }
+
         else
             { player | selection = card :: player.selection }
+
     else
         player
 
@@ -115,11 +116,11 @@ placeCombination round =
         updatedPlayers =
             Dict.update round.actualPlayer (Maybe.map removeSelectionFromHand) round.players
     in
-        { round
-            | players = updatedPlayers
-            , actualPlayer = ((round.actualPlayer + 1) % 4)
-            , table = (sortWith cardOrder <| Maybe.withDefault [] selection) :: round.table
-        }
+    { round
+        | players = updatedPlayers
+        , actualPlayer = modBy 4 (round.actualPlayer + 1)
+        , table = (sortWith cardOrder <| Maybe.withDefault [] selection) :: round.table
+    }
 
 
 updateRound : Round -> Round
@@ -160,4 +161,4 @@ updateFirst updater list =
             list
 
         head :: tail ->
-            (updater head) :: tail
+            updater head :: tail

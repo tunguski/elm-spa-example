@@ -1,23 +1,24 @@
-module Tests.Combinations exposing (..)
-
+module Tests.Combinations exposing (checkCombination, testCombinations, testFullHouse, testFullHouseWithPhoenix, testPairStairs, testStraightWithMahJong)
 
 import Html exposing (..)
 import Html.Attributes exposing (..)
-import Html.Events exposing (onInput, onClick)
-
-
-import TichuModel exposing (..)
+import Html.Events exposing (onClick, onInput)
 import TestBasics exposing (..)
+import TichuModel exposing (..)
 
 
 testCombinations =
-    List.map (\(name, trick) ->
-        let
-            passed =
-                case trick of
-                    Just _ -> Just True
-                    _ -> Just False
-        in
+    List.map
+        (\( name, trick ) ->
+            let
+                passed =
+                    case trick of
+                        Just _ ->
+                            Just True
+
+                        _ ->
+                            Just False
+            in
             div []
                 [ maybeTestHeader ("Parse trick: " ++ name) passed
                 ]
@@ -76,6 +77,4 @@ testStraightWithMahJong =
 
 
 checkCombination name cards =
-    (name, parseTrick cards)
-
-
+    ( name, parseTrick cards )

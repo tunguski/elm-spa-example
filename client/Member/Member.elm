@@ -1,16 +1,16 @@
-module Member.Member exposing (..)
+module Member.Member exposing (Model, Msg(..), Pages(..), component, emptyModel, update, view)
 
+import Component exposing (..)
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (onInput)
-import Component exposing (..)
 import Member.Add exposing (..)
 import Member.Search exposing (..)
 
 
 component : Component (Model msg) msg Msg
 component =
-    Component.simpleCp model update view
+    Component.simpleCp emptyModel update view
 
 
 
@@ -24,8 +24,8 @@ type alias Model msg =
     }
 
 
-model : Model msg
-model =
+emptyModel : Model msg
+emptyModel =
     Model
         Search
         Member.Add.component

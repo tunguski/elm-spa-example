@@ -1,26 +1,26 @@
-module ServerMain exposing (..)
+module ServerMain exposing (Msg(..), eraseDb, init, initDb, main, performBatch, postRequestUpdater, processTask, processTaskWithError, requiredTables, update, withSession, withSessionMaybe)
 
-import Base64
-import Debug
-import Dict
-import Http exposing (Error(..))
-import Json.Decode as Json exposing (..)
-import RandomTask exposing (..)
-import String
-import Result exposing (Result)
-import Task exposing (Task)
 import ApiPartApi exposing (..)
 import AwaitingTable exposing (..)
-import Game exposing (..)
+import Base64
 import BaseModel exposing (..)
+import Debug
+import Dict
 import ExampleDb exposing (..)
+import Game exposing (..)
+import Http exposing (Error(..))
+import Json.Decode as Json exposing (..)
 import MongoDb exposing (..)
+import RandomTask exposing (..)
 import Repo exposing (..)
 import Rest exposing (..)
+import Result exposing (Result)
 import Server exposing (..)
 import Session exposing (..)
 import SessionModel exposing (..)
+import String
 import Table exposing (..)
+import Task exposing (Task)
 import UrlParse exposing (..)
 
 
@@ -72,7 +72,7 @@ processTask eval task =
                 debug =
                     Debug.log "Task processing failed" error
             in
-                SendResponse (statusResponse 500)
+            SendResponse (statusResponse 500)
         )
         eval
         (task
@@ -101,7 +101,8 @@ requiredTables =
     , collectionUrl users
     , collectionUrl games
     , collectionUrl awaitingTables
-      --, collectionUrl archiveGames
+
+    --, collectionUrl archiveGames
     ]
 
 
@@ -128,8 +129,8 @@ initDb _ =
 eraseDb : () -> Partial Msg
 eraseDb _ =
     performBatch <|
-        (List.map deleteCollection requiredTables)
-            ++ (List.map createCollection requiredTables)
+        List.map deleteCollection requiredTables
+            ++ List.map createCollection requiredTables
 
 
 init : Initializer Msg
@@ -157,12 +158,12 @@ init request =
                     [ F eraseDb ]
                 ]
     in
-        case parse restMap request.url of
-            Ok response ->
-                response
+    case parse restMap request.url of
+        Ok response ->
+            response
 
-            Err error ->
-                Result (statusResponse 404)
+        Err error ->
+            Result (statusResponse 404)
 
 
 update : Updater Msg
@@ -193,9 +194,9 @@ postRequestUpdater request =
                 [ gamePostRequestPart PostRequestMsg request
                 ]
     in
-        case parse restMap request.url of
-            Ok cmd ->
-                cmd
+    case parse restMap request.url of
+        Ok cmd ->
+            cmd
 
-            Err error ->
-                Nothing
+        Err error ->
+            Nothing

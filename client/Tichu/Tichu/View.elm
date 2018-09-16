@@ -1,14 +1,15 @@
-module Tichu.View exposing (..)
+module Tichu.View exposing (cssStyle, printCard, printCardSkeleton, printCards, printRow, printTableHand, showPlayer, showRound, view)
 
+import Dict exposing (Dict)
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
 import Html.Lazy exposing (lazy, lazy2, lazy3)
-import Tichu.Model exposing (..)
-import Tichu.Update exposing (..)
 import List exposing (..)
 import String
-import Dict exposing (Dict)
+import Tichu.Model exposing (..)
+import Tichu.Update exposing (..)
+
 
 
 -----------------------------------------------------------------------------
@@ -37,7 +38,8 @@ view game =
                         ]
                         [ text "More Please" ]
                   ]
-                  --        , h3 [] [ text "Logs" ] :: map (\l -> div [ class "text-muted" ] [ text (toString l) ]) game.log
+
+                --        , h3 [] [ text "Logs" ] :: map (\l -> div [ class "text-muted" ] [ text (toString l) ]) game.log
                 ]
             )
         ]
@@ -59,7 +61,7 @@ printCard selection card =
         [ class <|
             String.join " "
                 [ "card-outer"
-                , "selected-" ++ (toString (member card selection))
+                , "selected-" ++ toString (member card selection)
                 ]
         , onClick (CheckCard card)
         ]
@@ -94,36 +96,36 @@ showRound : Round -> Html Msg
 showRound round =
     let
         table =
-            map (\s -> div [] s) (map (printTableHand) round.table)
+            map (\s -> div [] s) (map printTableHand round.table)
 
         players =
             map (showPlayer round.actualPlayer) (Dict.toList round.players)
     in
-        div []
-            ([ h2 [] [ text ("Round") ]
-             , h3 [] [ text ("Table") ]
-             ]
-                ++ table
-                ++ [ h3 [] [ text ("Players") ] ]
-                ++ players
-            )
+    div []
+        ([ h2 [] [ text "Round" ]
+         , h3 [] [ text "Table" ]
+         ]
+            ++ table
+            ++ [ h3 [] [ text "Players" ] ]
+            ++ players
+        )
 
 
 showPlayer : Int -> ( Int, Player ) -> Html Msg
 showPlayer actualPlayer ( index, player ) =
     div [] <|
-        (div
+        div
             [ class
                 (""
                     ++ (if actualPlayer == index then
                             "text-success"
+
                         else
                             ""
                        )
                 )
             ]
             [ text player.name ]
-        )
             :: printCards player.hand player.selection
 
 

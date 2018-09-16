@@ -1,23 +1,26 @@
-module ClientMain exposing (..)
+module ClientMain exposing (main, subscriptions)
 
-import Navigation
-import String exposing (dropLeft)
-import UrlParser exposing (..)
-import Window exposing (..)
-import Layout exposing (view, componentSubsMap)
-import Msg exposing (..)
+import Browser
+import Browser.Events exposing (onResize)
+import Layout exposing (componentSubsMap, view)
 import Model exposing (..)
 import ModelOps exposing (initModel, locationToMsg)
+import Msg exposing (..)
+import String exposing (dropLeft)
 import Update exposing (update)
+import Url.Parser exposing (..)
 
 
 main =
-    Navigation.program
-        locationToMsg
+    Browser.application
         { init = initModel
         , update = update
         , subscriptions = subscriptions
         , view = view
+
+        --locationToMsg
+        , onUrlRequest = UrlRequest
+        , onUrlChange = UrlChange
         }
 
 
@@ -28,6 +31,6 @@ main =
 subscriptions : Model -> Sub Msg
 subscriptions model =
     Sub.batch
-        [ resizes Resize
+        [ onResize Resize
         , componentSubsMap model
         ]

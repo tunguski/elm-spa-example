@@ -1,6 +1,7 @@
-module Css exposing (..)
+module Css exposing (coverCss, cssStyle, generateCss)
 
 import String exposing (concat)
+
 
 
 -----------------------------------------------------------------------------
@@ -119,7 +120,6 @@ cssStyle =
 """
 
 
-
 generateCss config =
     concat [ """
 
@@ -133,11 +133,11 @@ body, * {
 
 @media (min-width: 768px) {
   #side-menu {
-     height: """, toString (config.windowSize.height - 51), """px;
+     height: """, Debug.toString (config.windowSize.height - 51), """px;
   }
 
   #page-wrapper {
-     min-height: """, toString (config.windowSize.height - 51), """px;
+     min-height: """, Debug.toString (config.windowSize.height - 51), """px;
   }
 }
 

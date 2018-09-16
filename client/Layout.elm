@@ -1,15 +1,16 @@
-module Layout exposing (..)
+module Layout exposing (componentSubsMap, generateMenu, generateMenuGroup, generatePageContent, mapMenuToHtml, menuClass, menuElement, onlyForLogged, printRow, topMenu, view)
 
+import Browser exposing (Document)
+import Browser.Events exposing (onResize)
+import Component exposing (..)
+import Css exposing (..)
 import Html exposing (..)
 import Html.Attributes exposing (..)
-import Html.Events exposing (onInput, onClick)
+import Html.Events exposing (onClick, onInput)
 import List
-import Navigation
-import Window exposing (..)
-import Css exposing (..)
-import Component exposing (..)
-import Msg exposing (..)
 import Model exposing (..)
+import Msg exposing (..)
+
 
 
 -- VIEW
@@ -58,12 +59,13 @@ onlyForLogged model html =
 
 menuClass model =
     "sidebar-nav navbar-collapse "
-        ++ case model.menu.expanded of
-            False ->
-                "collapsed"
+        ++ (case model.menu.expanded of
+                False ->
+                    "collapsed"
 
-            _ ->
-                ""
+                _ ->
+                    ""
+           )
 
 
 generateMenu : Model -> Html Msg
@@ -79,6 +81,7 @@ generateMenu model =
                         [ text
                             (if model.config.smallSidebar then
                                 ">"
+
                              else
                                 "<"
                             )
@@ -86,7 +89,7 @@ generateMenu model =
                     ]
                 ]
     in
-        ul [ class "nav in", id "side-menu" ] allElements
+    ul [ class "nav in", id "side-menu" ] allElements
 
 
 menuElement : Bool -> MenuElement -> Html Msg
@@ -95,6 +98,7 @@ menuElement isLast element =
         [ class
             (if isLast then
                 "last-in-group"
+
              else
                 ""
             )
@@ -113,7 +117,7 @@ mapMenuToHtml elements =
             [ menuElement True h ]
 
         h :: t ->
-            (menuElement False h) :: (mapMenuToHtml t)
+            menuElement False h :: mapMenuToHtml t
 
         [] ->
             []
@@ -125,13 +129,14 @@ generateMenuGroup group =
         beginning =
             if group.title == "" then
                 []
+
             else
                 [ li [ class "menu-header" ] [ b [] [ text group.title ] ] ]
 
         tail =
             mapMenuToHtml group.elements
     in
-        List.append beginning tail
+    List.append beginning tail
 
 
 generatePageContent : Model -> Page Msg
@@ -188,32 +193,40 @@ componentSubsMap model =
             componentSubs (Context Login) model.loginComponent
 
 
-view : Model -> Html Msg
+view : Model -> Document Msg
 view model =
+    { title = "Tichu Guru"
+    , body = [ viewContent model ]
+    }
+
+
+viewContent : Model -> Html Msg
+viewContent model =
     let
         page =
             generatePageContent model
     in
-        div
-            [ class <|
-                "site-wrapper " ++
-                (if model.config.smallSidebar then
-                    "sidebar-small"
-                 else
-                    ""
-                 ++ if model.session == Nothing then
-                        "anonymous"
+    div
+        [ class <|
+            "site-wrapper "
+                ++ (if model.config.smallSidebar then
+                        "sidebar-small"
+
                     else
                         ""
-                )
-            ]
-            [ node "style" [ type_ "text/css" ] [ text (coverCss model.config) ]
-            , page.content
-            ]
+                            ++ (if model.session == Nothing then
+                                    "anonymous"
+
+                                else
+                                    ""
+                               )
+                   )
+        ]
+        [ node "style" [ type_ "text/css" ] [ text (coverCss model.config) ]
+        , page.content
+        ]
 
 
 printRow : List (Html Msg) -> Html Msg
 printRow content =
     div [ class "row" ] [ div [ class "col-md-12" ] content ]
-
-

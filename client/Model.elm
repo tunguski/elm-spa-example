@@ -1,25 +1,27 @@
-module Model exposing (..)
+module Model exposing (CssConfig, Menu, MenuElement, MenuGroup, Model, setDashboardComponent, setLoginComponent, setMemberComponent, setReportComponent, setTableComponent, setTaskComponent, setTestsComponent)
 
-import Window exposing (Size)
-import Http
-import Config
+import Browser.Navigation as Navigation exposing (Key)
 import Component exposing (Component)
-import Task.Task as Task
-import Member.Member as Member
-import Report.Report as Report
+import Config
 import Dashboard
-import Tests
-import TableView
-import SessionModel exposing (Session)
+import Http
 import LoginScreen
+import Member.Member as Member
 import Msg exposing (..)
+import Report.Report as Report
+import SessionModel exposing (Session)
+import TableView
+import Task.Task as Task
+import Tests
+
 
 
 -- MODEL
 
 
 type alias Model =
-    { baseUrl : String
+    { key : Key
+    , baseUrl : String
     , place : MenuEntry
     , session : Maybe Session
     , menu : Menu
@@ -63,7 +65,7 @@ setTestsComponent component model =
 
 
 type alias CssConfig =
-    { windowSize : Size
+    { windowSize : ( Int, Int )
     , smallSidebar : Bool
     }
 

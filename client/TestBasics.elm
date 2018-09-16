@@ -1,11 +1,8 @@
-module TestBasics exposing (..)
-
+module TestBasics exposing (GameState, Quad, displayResult, maybeResultSuccess, maybeTestHeader, quadMap, quadZip, resultSuccess, testHeader, toList)
 
 import Html exposing (..)
 import Html.Attributes exposing (..)
-import Html.Events exposing (onInput, onClick)
-
-
+import Html.Events exposing (onClick, onInput)
 import SessionModel exposing (..)
 import TichuModel exposing (..)
 
@@ -17,36 +14,43 @@ type alias GameState =
     }
 
 
-type alias Quad item = (item, item, item, item)
-
-
-quadGet i (q1, q2, q3, q4) =
-    case i of
-        1 -> q1
-        2 -> q2
-        3 -> q3
-        4 -> q4
-        _ -> Debug.crash "Wrong item"
+type alias Quad item =
+    { e1 : item
+    , e2 : item
+    , e3 : item
+    , e4 : item
+    }
 
 
 quadMap : (a -> b) -> Quad a -> Quad b
-quadMap mapper (q1, q2, q3, q4) =
-    (mapper q1, mapper q2, mapper q3, mapper q4)
+quadMap mapper quad =
+    Quad
+        (mapper quad.e1)
+        (mapper quad.e2)
+        (mapper quad.e3)
+        (mapper quad.e4)
 
 
-toList (q1, q2, q3, q4) =
-    [ q1, q2, q3, q4 ]
+toList quad =
+    [ quad.e1, quad.e2, quad.e3, quad.e4 ]
 
 
-quadZip : Quad a -> Quad b -> Quad (a, b)
-quadZip (q1, q2, q3, q4) (s1, s2, s3, s4) =
-    ((q1, s1), (q2, s2), (q3, s3), (q4, s4))
+quadZip : Quad a -> Quad b -> Quad ( a, b )
+quadZip q1 q2 =
+    Quad
+        ( q1.e1, q2.e1 )
+        ( q1.e2, q2.e2 )
+        ( q1.e3, q2.e3 )
+        ( q1.e4, q2.e4 )
 
 
 resultSuccess result =
     case result of
-        Ok _ -> True
-        Err _ -> False
+        Ok _ ->
+            True
+
+        Err _ ->
+            False
 
 
 maybeResultSuccess result =
@@ -58,27 +62,32 @@ maybeTestHeader name passed =
         color =
             case passed of
                 Just p ->
-                    if p then "green" else "red"
+                    if p then
+                        "green"
+
+                    else
+                        "red"
+
                 Nothing ->
                     "grey"
     in
-        h4 []
-            [ span [ style [("color", color)] ] [
-                text
+    h4 []
+        [ span [ style "color" color ]
+            [ text
                 (case passed of
                     Just p ->
-                        (if p then
+                        if p then
                             "[SUCC] "
-                          else
+
+                        else
                             "[FAIL] "
-                         )
 
                     Nothing ->
                         "[....] "
                 )
-                ]
-            , text name
             ]
+        , text name
+        ]
 
 
 testHeader name passed =
@@ -89,10 +98,8 @@ displayResult element =
     div []
         [ case element of
             Just data ->
-                text <| toString data
+                text <| Debug.toString data
 
             Nothing ->
-                i [ (class "fa fa-spinner fa-spin fa-fw") ] []
+                i [ class "fa fa-spinner fa-spin fa-fw" ] []
         ]
-
-

@@ -1,12 +1,12 @@
-module Tichu exposing (..)
+module Tichu exposing (main, subscriptions)
 
-{-|
-https://en.wikipedia.org/wiki/Tichu
+{-| <https://en.wikipedia.org/wiki/Tichu>
 -}
 
 import Tichu.Model exposing (..)
 import Tichu.Update exposing (..)
 import Tichu.View exposing (..)
+
 
 
 -----------------------------------------------------------------------------

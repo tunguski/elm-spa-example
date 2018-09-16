@@ -1,19 +1,19 @@
-module TichuModelJson exposing (..)
+module TichuModelJson exposing (awaitingTableDecoder, awaitingTableEncoder, card, cardEncoder, cardsDecoder, decodeCards, decodeString, encodeAwaitingTable, encodeCards, encodeGame, encodeGameConfig, encodeSuit, gameConfigDecoder, gameConfigEncoder, gameDecoder, gameEncoder, gameUpdate, gameUser, gameUserEncoder, maybeEncoder, message, messageEncoder, messageType, player, playerEncoder, rank, rankEncoder, round, roundEncoder, suit)
 
-import Date exposing (Date)
+import BaseModel exposing (..)
 import Json.Decode as Json exposing (..)
 import Json.Encode as JE
 import String exposing (toInt)
-import BaseModel exposing (..)
-import UserModel exposing (..)
 import TichuModel exposing (..)
+import Time exposing (Posix)
 import Tuple
+import UserModel exposing (..)
 
 
 gameConfigDecoder : Decoder GameConfig
 gameConfigDecoder =
     Json.map GameConfig
-        ((field "gameType" string)
+        (field "gameType" string
             |> andThen
                 (\string ->
                     case string of
@@ -43,11 +43,12 @@ gameDecoder =
         (field "round" round)
         (field "history" <| list round)
         (field "messages" <| list message)
-    |> andThen (\p ->
-        Json.map2 p
-        (field "log" <| list gameUpdate)
-        (field "finished" <| maybe (list int))
-    )
+        |> andThen
+            (\p ->
+                Json.map2 p
+                    (field "log" <| list gameUpdate)
+                    (field "finished" <| maybe (list int))
+            )
 
 
 round : Decoder Round
@@ -67,32 +68,33 @@ gameUser : Decoder GameUser
 gameUser =
     Json.map3 GameUser
         (field "name" string)
-        (field "lastCheck" longFloat)
+        (field "lastCheck" longPosix)
         (field "human" bool)
 
 
-cardsDecoder : Decoder (List Card)
+cardsDecoder : Decoder Cards
 cardsDecoder =
     list card
 
 
-decodeCards : String -> Result String Cards
+decodeCards : String -> Result Error Cards
 decodeCards =
     decodeString cardsDecoder
 
 
-decodeString = Json.decodeString
+decodeString =
+    Json.decodeString
 
 
 card : Decoder Card
 card =
-    (field "type" string)
+    field "type" string
         |> andThen
-            (\card ->
-                case card of
+            (\card_ ->
+                case card_ of
                     "NormalCard" ->
                         map2
-                            (\suit rank -> NormalCard suit rank)
+                            (\suit_ rank_ -> NormalCard suit_ rank_)
                             suit
                             rank
 
@@ -109,13 +111,13 @@ card =
                         succeed Dragon
 
                     _ ->
-                        fail ("Not valid pattern for decoder to Card. Pattern: " ++ toString string)
+                        fail ("Not valid pattern for decoder to Card. Pattern: " ++ Debug.toString string)
             )
 
 
 suit : Decoder Suit
 suit =
-    (field "suit" string)
+    field "suit" string
         |> andThen
             (\string ->
                 case string of
@@ -132,13 +134,13 @@ suit =
                         succeed Clubs
 
                     _ ->
-                        fail ("Not valid pattern for decoder to Suit. Pattern: " ++ toString string)
+                        fail ("Not valid pattern for decoder to Suit. Pattern: " ++ Debug.toString string)
             )
 
 
 rank : Decoder Rank
 rank =
-    (field "rank" string)
+    field "rank" string
         |> andThen
             (\string ->
                 case string of
@@ -156,10 +158,10 @@ rank =
 
                     _ ->
                         case toInt string of
-                            Ok i ->
+                            Just i ->
                                 succeed (R i)
 
-                            Err err ->
+                            _ ->
                                 fail ("Not valid pattern for decoder to Rank. Pattern: " ++ string)
             )
 
@@ -174,19 +176,26 @@ player =
         (field "score" int)
         (field "tichu" bool)
         (field "sawAllCards" bool)
-    |> andThen (\p ->
-        map2 p
-            (field "grandTichu" bool)
-            (field "exchange" (maybe
-                (cardsDecoder
-                |> andThen (\list ->
-                    case list of
-                        a :: b :: c :: t ->
-                            succeed (a, b, c)
-                        _ ->
-                            fail "Could not parse list with three elements"
-                ))))
-    )
+        |> andThen
+            (\p ->
+                map2 p
+                    (field "grandTichu" bool)
+                    (field "exchange"
+                        (maybe
+                            (cardsDecoder
+                                |> andThen
+                                    (\list ->
+                                        case list of
+                                            a :: b :: c :: t ->
+                                                succeed ( a, b, c )
+
+                                            _ ->
+                                                fail "Could not parse list with three elements"
+                                    )
+                            )
+                        )
+                    )
+            )
 
 
 message : Decoder Message
@@ -202,11 +211,20 @@ messageType =
         |> andThen
             (\string ->
                 case string of
-                    "Error" -> succeed Error
-                    "Warning" -> succeed Warning
-                    "Info" -> succeed Info
-                    "Success" -> succeed Success
-                    _ -> fail ("Not valid pattern for decoder to MessageType. Pattern: " ++ toString string)
+                    "Error" ->
+                        succeed Error
+
+                    "Warning" ->
+                        succeed Warning
+
+                    "Info" ->
+                        succeed Info
+
+                    "Success" ->
+                        succeed Success
+
+                    _ ->
+                        fail ("Not valid pattern for decoder to MessageType. Pattern: " ++ Debug.toString string)
             )
 
 
@@ -221,20 +239,19 @@ gameEncoder game =
         [ ( "name", JE.string game.name )
         , ( "config", gameConfigEncoder game.config )
         , ( "test", JE.bool game.test )
-        , ( "seed", JE.string <| toString game.seed )
-        , ( "users"
-          , JE.list (List.map gameUserEncoder game.users)
-          )
+        , ( "seed", JE.string <| Debug.toString game.seed )
+        , ( "users", JE.list gameUserEncoder game.users )
         , ( "round", roundEncoder game.round )
-        , ( "history", JE.list (List.map roundEncoder game.history) )
-        , ( "messages", JE.list (List.map messageEncoder game.messages) )
-        , ( "log", JE.list [] )
-        , ( "finished",
-                case game.finished of
-                    Just list ->
-                        JE.list (List.map JE.int list)
-                    _ ->
-                        JE.null
+        , ( "history", JE.list roundEncoder game.history )
+        , ( "messages", JE.list messageEncoder game.messages )
+        , ( "log", JE.list JE.string [] )
+        , ( "finished"
+          , case game.finished of
+                Just list ->
+                    JE.list JE.int list
+
+                _ ->
+                    JE.null
           )
         ]
 
@@ -242,7 +259,7 @@ gameEncoder game =
 gameConfigEncoder : GameConfig -> Value
 gameConfigEncoder config =
     JE.object
-        [ ( "gameType", JE.string <| toString config.gameType )
+        [ ( "gameType", JE.string <| Debug.toString config.gameType )
         ]
 
 
@@ -251,66 +268,69 @@ encodeGameConfig config =
 
 
 gameUserEncoder : GameUser -> Value
-gameUserEncoder gameUser =
+gameUserEncoder gameUser_ =
     JE.object
-        [ ( "name", JE.string gameUser.name )
-        , ( "lastCheck", JE.float gameUser.lastCheck )
-        , ( "human", JE.bool gameUser.human )
+        [ ( "name", JE.string gameUser_.name )
+        , ( "lastCheck", JE.int <| Time.posixToMillis <| gameUser_.lastCheck )
+        , ( "human", JE.bool gameUser_.human )
         ]
 
 
 messageEncoder : Message -> Value
-messageEncoder message =
+messageEncoder message_ =
     JE.object
         []
 
 
 cardEncoder : Card -> Value
-cardEncoder card =
-    case card of
-        NormalCard suit rank ->
+cardEncoder card_ =
+    case card_ of
+        NormalCard suit_ rank_ ->
             JE.object
                 [ ( "type", JE.string "NormalCard" )
-                , ( "suit", JE.string <| toString suit )
-                , ( "rank", rankEncoder rank )
+                , ( "suit", JE.string <| Debug.toString suit_ )
+                , ( "rank", rankEncoder rank_ )
                 ]
 
         _ ->
             JE.object
-                [ ( "type", JE.string (toString card) ) ]
+                [ ( "type", JE.string (Debug.toString card) ) ]
 
 
 encodeCards : Cards -> String
 encodeCards cards =
-    JE.encode 0 <| JE.list (List.map cardEncoder cards)
+    JE.encode 0 <| JE.list cardEncoder cards
 
 
 rankEncoder : Rank -> Value
-rankEncoder rank =
+rankEncoder rank_ =
     JE.string <|
-        case rank of
+        case rank_ of
             R value ->
-                toString value
+                Debug.toString value
+
             _ ->
-                toString rank
+                Debug.toString rank_
 
 
 playerEncoder : Player -> Value
-playerEncoder player =
+playerEncoder player_ =
     JE.object
-        [ ( "hand", listToValue cardEncoder player.hand )
-        , ( "cardsOnHand", JE.int player.cardsOnHand )
-        , ( "collected", listToValue (listToValue (listToValue cardEncoder)) player.collected )
-        , ( "name", JE.string player.name )
-        , ( "score", JE.int player.score )
-        , ( "tichu", JE.bool player.tichu )
-        , ( "sawAllCards", JE.bool player.sawAllCards )
-        , ( "grandTichu", JE.bool player.grandTichu )
-        , ( "exchange", case player.exchange of
-            Just (a, b, c) ->
-                listToValue cardEncoder [a, b, c]
-            Nothing ->
-                JE.null
+        [ ( "hand", listToValue cardEncoder player_.hand )
+        , ( "cardsOnHand", JE.int player_.cardsOnHand )
+        , ( "collected", listToValue (listToValue (listToValue cardEncoder)) player_.collected )
+        , ( "name", JE.string player_.name )
+        , ( "score", JE.int player_.score )
+        , ( "tichu", JE.bool player_.tichu )
+        , ( "sawAllCards", JE.bool player_.sawAllCards )
+        , ( "grandTichu", JE.bool player_.grandTichu )
+        , ( "exchange"
+          , case player_.exchange of
+                Just ( a, b, c ) ->
+                    listToValue cardEncoder [ a, b, c ]
+
+                Nothing ->
+                    JE.null
           )
         ]
 
@@ -319,21 +339,22 @@ maybeEncoder maybe encoder =
     case maybe of
         Just value ->
             encoder value
+
         Nothing ->
             JE.null
 
 
 roundEncoder : Round -> Value
-roundEncoder round =
+roundEncoder round_ =
     JE.object
-        [ ( "players", listToValue playerEncoder round.players )
-        , ( "table", listToValue (List.map cardEncoder >> JE.list) round.table )
-        , ( "actualPlayer", JE.int round.actualPlayer )
-        , ( "tableHandOwner", maybeEncoder round.tableHandOwner JE.int )
-        , ( "demand", maybeEncoder round.demand rankEncoder )
-        , ( "demandCompleted", JE.bool round.demandCompleted )
-        , ( "seed", JE.string <| toString round.seed )
-        , ( "winner", maybeEncoder round.winner JE.int )
+        [ ( "players", listToValue playerEncoder round_.players )
+        , ( "table", listToValue (JE.list cardEncoder) round_.table )
+        , ( "actualPlayer", JE.int round_.actualPlayer )
+        , ( "tableHandOwner", maybeEncoder round_.tableHandOwner JE.int )
+        , ( "demand", maybeEncoder round_.demand rankEncoder )
+        , ( "demandCompleted", JE.bool round_.demandCompleted )
+        , ( "seed", JE.string <| Debug.toString round_.seed )
+        , ( "winner", maybeEncoder round_.winner JE.int )
         ]
 
 
@@ -367,9 +388,10 @@ awaitingTableDecoder =
             list
                 (map4 AwaitingTableUser
                     (field "name" string)
-                    (field "lastCheck" longFloat)
+                    (field "lastCheck" longPosix)
                     (field "pressedStart" bool)
-                    (field "human" bool))
+                    (field "human" bool)
+                )
         )
         (field "test" bool)
         (field "seed" longInt)
@@ -380,18 +402,18 @@ awaitingTableEncoder table =
     JE.object
         [ ( "name", JE.string table.name )
         , ( "config", gameConfigEncoder table.config )
-        , ( "seed", JE.string <| toString table.seed )
+        , ( "seed", JE.string <| Debug.toString table.seed )
         , ( "users"
           , JE.list
-                (List.map (\user ->
+                (\user ->
                     JE.object
-                        [ ("name", JE.string user.name)
-                        , ("lastCheck", JE.float user.lastCheck)
-                        , ("pressedStart", JE.bool user.pressedStart)
-                        , ("human", JE.bool user.human)
+                        [ ( "name", JE.string user.name )
+                        , ( "lastCheck", JE.int <| Time.posixToMillis <| user.lastCheck )
+                        , ( "pressedStart", JE.bool user.pressedStart )
+                        , ( "human", JE.bool user.human )
                         ]
-                    ) table.users
                 )
+                table.users
           )
         , ( "test", JE.bool table.test )
         ]
@@ -399,5 +421,3 @@ awaitingTableEncoder table =
 
 encodeAwaitingTable awaitingTable =
     JE.encode 0 <| awaitingTableEncoder awaitingTable
-
-

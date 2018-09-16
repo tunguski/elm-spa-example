@@ -1,7 +1,8 @@
-module Component exposing (..)
+module Component exposing (Component, ComponentUpdate, ComponentView, Context, Page, componentSubs, fullRow, generateView, headerRow, mapContext, multiCellRow, row, setPlace, setPlaceInnerComponent, simpleCp, singleCellRow, updateModel)
 
 import Html exposing (..)
 import Html.Attributes exposing (..)
+
 
 
 -- COMPONENT MODEL
@@ -46,7 +47,7 @@ type alias Page msg =
 
 mapContext : Context msg cMsg -> (ccMsg -> cMsg) -> Context msg ccMsg
 mapContext ctx map =
-    { ctx | mapMsg = map >> ctx.mapMsg }
+    { mapMsg = map >> ctx.mapMsg }
 
 
 generateView : Context msg cMsg -> Component model msg cMsg -> Page msg
@@ -65,36 +66,50 @@ componentSubs ctx component =
 
 
 
-{-  -}
+{- -}
 --updateModel : Context msg cMsg -> (model -> Component cModel cMsg msg) -> (Component cModel cMsg msg -> model -> model) -> model -> cMsg -> (model, Cmd msg)
 
 
 updateModel ctx getter setter model msg =
     let
-        cp = getter model
-        ( updatedModel, cmd ) = cp.update ctx msg cp.model
+        cp =
+            getter model
+
+        ( updatedModel, cmd ) =
+            cp.update ctx msg cp.model
     in
-        ( setter { cp | model = updatedModel } model, cmd )
+    ( setter { cp | model = updatedModel } model, cmd )
 
 
 setPlaceInnerComponent getter setter model place page =
     let
-        cp = getter model
-        m = cp.model
+        cp =
+            getter model
+
+        m =
+            cp.model
     in
-        (setter { cp | model = { m | place = page } }
-            { model | place = place }
-        ) ! []
+    ( setter { cp | model = { m | place = page } }
+        { model | place = place }
+    , Cmd.none
+    )
 
 
 setPlace ctx getter model place =
     let
-        cp = getter model
+        cp =
+            getter model
     in
-        { model | place = place }
-        ! (case cp.initCmd of
-            Just c -> [ c ctx ]
-            Nothing -> [])
+    ( { model | place = place }
+    , Cmd.batch
+        (case cp.initCmd of
+            Just c ->
+                [ c ctx ]
+
+            Nothing ->
+                []
+        )
+    )
 
 
 row : List (Html msg) -> Html msg
@@ -109,7 +124,7 @@ fullRow internal =
 
 singleCellRow : Int -> List (Html msg) -> Html msg
 singleCellRow width internal =
-    row [ div [ class <| "col-md-" ++ (toString width) ] internal ]
+    row [ div [ class <| "col-md-" ++ Debug.toString width ] internal ]
 
 
 multiCellRow : List ( Int, List (Html msg) ) -> Html msg
@@ -117,7 +132,7 @@ multiCellRow cols =
     row <|
         List.map
             (\( width, internal ) ->
-                div [ class <| "col-md-" ++ (toString width) ] internal
+                div [ class <| "col-md-" ++ Debug.toString width ] internal
             )
             cols
 
@@ -125,5 +140,3 @@ multiCellRow cols =
 headerRow : String -> Html msg
 headerRow header =
     div [ class "row header" ] [ h2 [] [ text header ] ]
-
-

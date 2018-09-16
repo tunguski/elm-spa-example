@@ -1,10 +1,10 @@
-module Menu exposing (..)
+module Menu exposing (menuDefinition)
 
-import Msg exposing (..)
-import Model exposing (..)
-import Task.Task as Task
 import Member.Member as Member
+import Model exposing (..)
+import Msg exposing (..)
 import Report.Report as Report
+import Task.Task as Task
 
 
 menuDefinition : Menu
