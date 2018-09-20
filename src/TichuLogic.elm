@@ -13,7 +13,7 @@ import Server exposing (..)
 import Task exposing (..)
 import TichuModel exposing (..)
 import TichuModelJson exposing (..)
-import Time exposing (Time)
+import Time 
 import UserModel exposing (User)
 
 
@@ -164,19 +164,19 @@ playHandAndUpdateRound table round player param =
                         |> maybeIncActualPlayer
                         |> updatePlayerPlayingHand player param
                         |> maybeSetWinner (removeCards param.parsedCards player.hand) round.actualPlayer
-                        |> (\round ->
+                        |> (\round_ ->
                                 let
-                                    player =
-                                        getActualPlayer round
+                                    player_ =
+                                        getActualPlayer round_
                                 in
                                 modifyPlayer
-                                    player.name
-                                    (\player ->
-                                        { player
-                                            | collected = [ [ [ Dog ] ] ] ++ player.collected
+                                    player_.name
+                                    (\player__ ->
+                                        { player__
+                                            | collected = [ [ [ Dog ] ] ] ++ player__.collected
                                         }
                                     )
-                                    round
+                                    round_
                            )
 
                 -- putCardsOnTable param.parsedCards
@@ -217,13 +217,13 @@ pass userName table round player =
 
 
 exchangeCards : String -> Game -> Round -> Player -> Result String (List Card) -> Result ( Int, String ) (Task Error Response)
-exchangeCards userName table round player exchangeCards =
+exchangeCards userName table round player exchangeCards_ =
     Nothing
         |> orElse (isNothing player.exchange) "You have exchanged already"
         |> executeIfNoError
             (let
                 hasAllCards =
-                    case exchangeCards of
+                    case exchangeCards_ of
                         Ok cards ->
                             List.all ((\b a -> hasCard a b) <| player) cards
 
@@ -231,13 +231,13 @@ exchangeCards userName table round player exchangeCards =
                             False
              in
              if hasAllCards then
-                case exchangeCards of
+                case exchangeCards_ of
                     Ok [ a, b, c ] ->
                         put table.name
                             ({ table
                                 | round =
                                     modifyPlayer userName
-                                        (\player -> { player | exchange = Just ( a, b, c ) })
+                                        (\player_ -> { player_ | exchange = Just ( a, b, c ) })
                                         round
                              }
                                 |> (\t ->
@@ -289,7 +289,7 @@ updateAndReturnIf condition update userName table round player =
 declareTichu userName table round player =
     updateAndReturnIf
         (.cardsOnHand >> (==) 14)
-        (\player -> { player | tichu = True })
+        (\player_ -> { player_ | tichu = True })
         userName
         table
         round
@@ -305,8 +305,8 @@ declareTichu userName table round player =
 declareGrandTichu userName table round player =
     updateAndReturnIf
         (.sawAllCards >> not)
-        (\player ->
-            { player
+        (\player_ ->
+            { player_
                 | grandTichu = True
                 , sawAllCards = True
             }
@@ -326,7 +326,7 @@ declareGrandTichu userName table round player =
 seeAllCards userName table round player =
     updateAndReturnIf
         (.sawAllCards >> not)
-        (\player -> { player | sawAllCards = True })
+        (\player_ -> { player_ | sawAllCards = True })
         userName
         table
         round

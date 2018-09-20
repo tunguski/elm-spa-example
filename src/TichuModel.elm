@@ -5,7 +5,7 @@ import List exposing (..)
 import Maybe exposing (andThen)
 import Random exposing (initialSeed, step)
 import Random.List exposing (shuffle)
-import Time exposing (Posix)
+import Time
 import UserModel exposing (User)
 
 
@@ -511,7 +511,7 @@ type alias Message =
 
 type alias GameUser =
     { name : String
-    , lastCheck : Posix
+    , lastCheck : Int
     , human : Bool
     }
 
@@ -543,7 +543,7 @@ type alias GameConfig =
 
 type alias AwaitingTableUser =
     { name : String
-    , lastCheck : Posix
+    , lastCheck : Int
     , pressedStart : Bool
     , human : Bool
     }

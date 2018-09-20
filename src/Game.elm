@@ -7,6 +7,7 @@ import ExampleDb exposing (games)
 import Http exposing (Error(..))
 import MongoDb exposing (..)
 import Murmur3
+import Debug exposing (toString)
 import Process
 import Rest exposing (..)
 import Server exposing (..)
@@ -17,7 +18,7 @@ import TichuBot exposing (tableChanged)
 import TichuLogic exposing (..)
 import TichuModel exposing (..)
 import TichuModelJson exposing (..)
-import Time exposing (second)
+import Time 
 import UrlParse exposing (..)
 import UserModel exposing (..)
 
@@ -370,7 +371,11 @@ gamePostRequest m idTable =
 
                                             -- possible infinite recursion
                                             rec =
-                                                \t -> t |> onError (\e -> rec move |> Debug.log "Bot move retry")
+                                                \t -> t |> onError (\e -> rec2 move |> Debug.log "Bot move retry")
+                                            rec2 =
+                                                \t -> t |> onError (\e -> rec3 move |> Debug.log "Bot move retry")
+                                            rec3 =
+                                                \t -> t --|> onError (\e -> rec move |> Debug.log "Bot move retry")
                                         in
                                         rec move
                                     )

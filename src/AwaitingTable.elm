@@ -13,7 +13,7 @@ import String
 import Task exposing (..)
 import TichuModel exposing (..)
 import TichuModelJson exposing (..)
-import Time exposing (second)
+import Time
 import UrlParse exposing (..)
 import UserModel exposing (..)
 
@@ -207,18 +207,18 @@ postAwaitingTable api id =
                                                     (String.toInt
                                                         >> (\r ->
                                                                 case r of
-                                                                    Ok i ->
+                                                                    Just i ->
                                                                         i
 
-                                                                    Err _ ->
-                                                                        Basics.round api.request.time
+                                                                    _ ->
+                                                                        api.request.time
                                                            )
                                                     )
-                                                    (Basics.round api.request.time)
+                                                    api.request.time
                                                     api.request
 
                                              else
-                                                Basics.round api.request.time
+                                                 api.request.time
                                             )
                                 in
                                 put id table awaitingTables
@@ -229,6 +229,7 @@ postAwaitingTable api id =
                     )
                 -- if table exists, return error information that name is reserved
                 -- return created table
+                --|> mapError Debug.toString
                 |> andThen
                     (\result ->
                         case result of
@@ -236,9 +237,12 @@ postAwaitingTable api id =
                                 encode awaitingTableEncoder table |> okResponse |> Task.succeed
 
                             Err message ->
-                                response 400 message |> Task.succeed
+                                response 400 (Debug.toString message) |> Task.succeed
                     )
         )
+
+
+second = 1000
 
 
 userCheckTooOld api =
@@ -281,11 +285,11 @@ listAwaitingTables api =
                                 (\r ->
                                     listDocuments awaitingTables
                                         |> andThen
-                                            (\tables ->
+                                            (\tables_ ->
                                                 succeed
-                                                    { tables
+                                                    { tables_
                                                       -- filter test elements - we dont want to show it to players
-                                                        | elements = List.filter (.test >> (==) api.request.test) tables.elements
+                                                        | elements = List.filter (.test >> (==) api.request.test) tables_.elements
                                                     }
                                             )
                                 )
@@ -301,6 +305,6 @@ listAwaitingTables api =
                             )
 
                     Err error ->
-                        error |> toString >> response 500 >> api.sendResponse
+                        error |> Debug.toString >> response 500 >> api.sendResponse
             )
         |> Command

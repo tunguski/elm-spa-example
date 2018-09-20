@@ -12,7 +12,7 @@ import Task exposing (..)
 import TichuLogic exposing (..)
 import TichuModel exposing (..)
 import TichuModelJson exposing (..)
-import Time exposing (second)
+import Time 
 
 
 {-| Maybe make bot's move. Returned task describes what bot want's to do.
@@ -32,7 +32,7 @@ tableChanged botName game =
     case roundFinished game.round of
         False ->
             botMove botName game game.round player actualPlayer param
-                |> Maybe.map (processingResultToTask >> map toString)
+                |> Maybe.map (processingResultToTask >> map Debug.toString)
 
         True ->
             Nothing
@@ -222,5 +222,5 @@ playCards botName gameState actualPlayer cards =
                             |> (Ok >> Just)
 
                     Err err ->
-                        Debug.log ("Error when tried to play cards!" ++ toString err) Nothing
+                        Debug.log ("Error when tried to play cards!" ++ Debug.toString err) Nothing
            )

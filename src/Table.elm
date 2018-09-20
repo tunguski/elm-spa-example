@@ -55,7 +55,7 @@ tablesApiPart api =
                                             >> okResponse
                                             >> Task.succeed
                                         )
-                                    |> onError (toString >> response 500 >> Task.succeed)
+                                    |> onError (Debug.toString >> response 500 >> Task.succeed)
                             )
 
                     _ ->

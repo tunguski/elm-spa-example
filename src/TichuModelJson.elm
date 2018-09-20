@@ -5,7 +5,7 @@ import Json.Decode as Json exposing (..)
 import Json.Encode as JE
 import String exposing (toInt)
 import TichuModel exposing (..)
-import Time exposing (Posix)
+import Time 
 import Tuple
 import UserModel exposing (..)
 
@@ -68,7 +68,7 @@ gameUser : Decoder GameUser
 gameUser =
     Json.map3 GameUser
         (field "name" string)
-        (field "lastCheck" longPosix)
+        (field "lastCheck" longInt)
         (field "human" bool)
 
 
@@ -271,7 +271,7 @@ gameUserEncoder : GameUser -> Value
 gameUserEncoder gameUser_ =
     JE.object
         [ ( "name", JE.string gameUser_.name )
-        , ( "lastCheck", JE.int <| Time.posixToMillis <| gameUser_.lastCheck )
+        , ( "lastCheck", JE.int <| gameUser_.lastCheck )
         , ( "human", JE.bool gameUser_.human )
         ]
 
@@ -388,7 +388,7 @@ awaitingTableDecoder =
             list
                 (map4 AwaitingTableUser
                     (field "name" string)
-                    (field "lastCheck" longPosix)
+                    (field "lastCheck" longInt)
                     (field "pressedStart" bool)
                     (field "human" bool)
                 )
@@ -408,7 +408,7 @@ awaitingTableEncoder table =
                 (\user ->
                     JE.object
                         [ ( "name", JE.string user.name )
-                        , ( "lastCheck", JE.int <| Time.posixToMillis <| user.lastCheck )
+                        , ( "lastCheck", JE.int <|  user.lastCheck )
                         , ( "pressedStart", JE.bool user.pressedStart )
                         , ( "human", JE.bool user.human )
                         ]

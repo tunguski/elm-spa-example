@@ -13,7 +13,7 @@ import Task exposing (..)
 import TichuLogic exposing (..)
 import TichuModel exposing (..)
 import TichuModelJson exposing (..)
-import Time exposing (second)
+import Time 
 
 
 allBotsGame : ApiPartApi msg -> String -> Int -> Task Error String
