@@ -77,9 +77,20 @@ cardsDecoder =
     list card
 
 
-decodeCards : String -> Result Error Cards
+stringifyError : Result Error Cards -> Result String Cards
+stringifyError input =
+    case input of
+        Ok a ->
+            Ok a
+
+        Err a ->
+            Err (Debug.toString a)
+
+
+decodeCards : String -> Result String Cards
 decodeCards =
     decodeString cardsDecoder
+        >> stringifyError
 
 
 decodeString =

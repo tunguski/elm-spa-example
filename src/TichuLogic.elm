@@ -216,7 +216,9 @@ pass userName table round player =
             )
 
 
-exchangeCards : String -> Game -> Round -> Player -> Result String (List Card) -> Result ( Int, String ) (Task Error Response)
+exchangeCards : String -> Game -> Round -> Player
+        -> Result String Cards
+        -> Result ( Int, String ) (Task Error Response)
 exchangeCards userName table round player exchangeCards_ =
     Nothing
         |> orElse (isNothing player.exchange) "You have exchanged already"

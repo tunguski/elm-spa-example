@@ -4,12 +4,11 @@ import ApiPartApi exposing (..)
 import AwaitingTable exposing (..)
 import Base64
 import BaseModel exposing (..)
-import Debug
 import Dict
 import ExampleDb exposing (..)
 import Game exposing (..)
 import Http exposing (Error(..))
-import Json.Decode as Json exposing (..)
+import Json.Decode as Json 
 import MongoDb exposing (..)
 import RandomTask exposing (..)
 import Repo exposing (..)
@@ -112,10 +111,10 @@ performBatch tasks =
             (\result ->
                 case result of
                     Ok data ->
-                        data |> (toString >> okResponse >> SendResponse)
+                        data |> (Debug.toString >> okResponse >> SendResponse)
 
                     Err error ->
-                        error |> (toString >> response 500 >> SendResponse)
+                        error |> (Debug.toString >> response 500 >> SendResponse)
             )
         |> Command
 
