@@ -3,11 +3,11 @@ module Game exposing (declareGrandTichu, declareTichu, demandRank, doWithTable, 
 import AllBotGame exposing (..)
 import ApiPartApi exposing (..)
 import BaseModel exposing (..)
+import Debug exposing (toString)
 import ExampleDb exposing (games)
 import Http exposing (Error(..))
 import MongoDb exposing (..)
 import Murmur3
-import Debug exposing (toString)
 import Process
 import Rest exposing (..)
 import Server exposing (..)
@@ -18,7 +18,7 @@ import TichuBot exposing (tableChanged)
 import TichuLogic exposing (..)
 import TichuModel exposing (..)
 import TichuModelJson exposing (..)
-import Time 
+import Time
 import UrlParse exposing (..)
 import UserModel exposing (..)
 
@@ -204,100 +204,110 @@ updateAndReturnIf exec =
         )
 
 
+obfuscatedGame_ session round table =
+    -- obfuscate and show only 8 cards if did not declare grand/not
+    { table
+        | round =
+            { round
+                | players =
+                    List.map
+                        (\player ->
+                            if player.name == session.username then
+                                if player.sawAllCards then
+                                    player
+
+                                else
+                                    { player
+                                        | hand = List.take 8 player.hand
+                                    }
+
+                            else
+                                { player
+                                    | hand = []
+                                    , exchange = Nothing
+                                }
+                        )
+                        round.players
+                , seed = 0
+            }
+        , seed = 0
+    }
+
+
 getAndReturnIfChanged api id session =
-  getGameWithRetry id
-      |> andThen
-          (\table ->
-              put id
-                  { table
-                      | users =
-                          List.map
-                              (\user ->
-                                  if user.name /= session.username then
-                                      user
+    getGameWithRetry id
+        |> andThen
+            (\table ->
+                put id
+                    { table
+                        | users =
+                            List.map
+                                (\user ->
+                                    if user.name /= session.username then
+                                        user
 
-                                  else
-                                      { user | lastCheck = api.request.time }
-                              )
-                              table.users
-                  }
-                  games
-                  |> andThenReturn
-                      (let
-                          round =
-                              table.round
+                                    else
+                                        { user | lastCheck = api.request.time }
+                                )
+                                table.users
+                    }
+                    games
+                    |> andThenReturn
+                        (let
+                            round =
+                                table.round
 
-                          obfuscatedGame =
-                              -- obfuscate and show only 8 cards if did not declare grand/not
-                              { table
-                                  | round =
-                                      { round
-                                          | players =
-                                              List.map
-                                                  (\player ->
-                                                      if player.name == session.username then
-                                                          if player.sawAllCards then
-                                                              player
+                            obfuscatedGame =
+                                obfuscatedGame_ session round table
 
-                                                          else
-                                                              { player
-                                                                  | hand = List.take 8 player.hand
-                                                              }
+                            hashGameBase =
+                                { obfuscatedGame
+                                    | users =
+                                        List.map
+                                            (\user ->
+                                                { user
+                                                    | lastCheck = 0
+                                                }
+                                            )
+                                            table.users
+                                }
 
-                                                      else
-                                                          { player
-                                                              | hand = []
-                                                              , exchange = Nothing
-                                                          }
-                                                  )
-                                                  round.players
-                                          , seed = 0
-                                      }
-                                  , seed = 0
-                              }
+                            gameHash =
+                                Murmur3.hashString 17 (toString hashGameBase)
 
-                          hashGameBase =
-                              { obfuscatedGame
-                                  | users =
-                                      List.map
-                                          (\user ->
-                                              { user
-                                                  | lastCheck = 0
-                                              }
-                                          )
-                                          table.users
-                              }
+                            gameResponse =
+                                encode gameEncoder obfuscatedGame
+                                    |> okResponse
+                                    |> Task.succeed
+                         in
+                         returnGetAndReturnIfChanged api id session gameHash gameResponse
+                        )
+            )
 
-                          gameHash =
-                              Murmur3.hashString 17 (toString hashGameBase)
 
-                          gameResponse =
-                              encode gameEncoder obfuscatedGame
-                                  |> okResponse
-                                  |> Task.succeed
-                       in
-                       case getParam "hash" api.request of
-                          Just t ->
-                              if t /= toString gameHash then
-                                  gameResponse
+returnGetAndReturnIfChanged api id session gameHash gameResponse =
+    case getParam "hash" api.request of
+        Just t ->
+            if t /= toString gameHash then
+                gameResponse
 
-                              else
-                                  Task.map2 (\a b -> ( a, b ))
-                                      (Process.sleep 500.0)
-                                      Time.now
-                                      |> andThen
-                                          (\( _, time ) ->
-                                              if api.request.time + 5000 < Time.posixToMillis time then
-                                                  gameResponse
+            else
+                Task.map2
+                    Tuple.pair
+                    (Process.sleep 500.0)
+                    Time.now
+                    |> andThen
+                        (\( _, time ) ->
+                            if api.request.time + 5000 < Time.posixToMillis time then
+                                gameResponse
 
-                                              else
-                                                  getAndReturnIfChanged api id session
-                                          )
+                            else
+                                getAndReturnIfChanged api id session
+                        )
 
-                          Nothing ->
-                              gameResponse
-                      )
-          )
+        Nothing ->
+            gameResponse
+
 
 {-| Return awaiting table with id.
 -}
@@ -371,10 +381,14 @@ gamePostRequest m idTable =
                                             -- possible infinite recursion
                                             rec =
                                                 \t -> t |> onError (\e -> rec2 move |> Debug.log "Bot move retry")
+
                                             rec2 =
                                                 \t -> t |> onError (\e -> rec3 move |> Debug.log "Bot move retry")
+
                                             rec3 =
-                                                \t -> t --|> onError (\e -> rec move |> Debug.log "Bot move retry")
+                                                \t -> t
+
+                                            --|> onError (\e -> rec move |> Debug.log "Bot move retry")
                                         in
                                         rec move
                                     )
